@@ -1,4 +1,5 @@
 import Discord from 'discord.js'
+
 import { BaseArrayManager, BaseClass } from './base'
 import { Client } from './client'
 import { Command, CommandDirectAccess, CommandGuildAccess, CommandManager, getCommandFootprint } from './command'

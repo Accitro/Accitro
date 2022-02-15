@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import Discord from 'discord.js';
 import Crypto from 'crypto';
 import { Module } from './module';
