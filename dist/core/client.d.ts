@@ -1,6 +1,7 @@
 import Discord from 'discord.js';
 import { DatabaseCredentials, QueryBuilder } from '../database/query-builder';
 import { EventEmitter } from './events';
+import { ScopedLogger } from './logger';
 import { ModuleManager } from './module';
 export interface ClientOptions {
 }
@@ -14,4 +15,5 @@ export declare class Client {
     readonly modules: ModuleManager;
     readonly on: EventEmitter['on'];
     readonly once: EventEmitter['once'];
+    readonly logger: ScopedLogger;
 }

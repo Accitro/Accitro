@@ -3,6 +3,7 @@ import { BaseArrayManager, BaseClass } from './base'
 import { Client } from './client'
 import { Command, CommandDirectAccess, CommandGuildAccess, CommandManager, getCommandFootprint } from './command'
 import { ClientEvents, EventEmitter } from './events'
+import { ScopedLogger } from './logger'
 
 export abstract class Module extends BaseClass {
   public constructor (manager: ModuleManager) {
@@ -14,6 +15,15 @@ export abstract class Module extends BaseClass {
   }
 
   public readonly moduleManager: ModuleManager
+
+  private _logger?: ScopedLogger
+  public get logger () {
+    if (!this._logger) {
+      this._logger = this.moduleManager.logger.newScope(`Module: ${this.name}`)
+    }
+
+    return this._logger
+  }
 
   public abstract readonly name: string
   public abstract readonly description: string
@@ -68,6 +78,7 @@ export class ModuleManager extends BaseArrayManager<Module> {
     super(client)
 
     ModuleManager.bindEventEmitter(this, client.events)
+    this.logger = client.logger.newScope('Module Manager')
   }
 
   public get moduleTable () {
@@ -77,6 +88,8 @@ export class ModuleManager extends BaseArrayManager<Module> {
   public get moduleGuildOverrideTable () {
     return this.database.getTableManager('moduleGuildOverride')
   }
+
+  public readonly logger: ScopedLogger
 
   public async publishCommands (entryList: { [key: string]: { module: Module, command: Command } }, application: Discord.ClientApplication) {
     const commandMap: {
@@ -261,14 +274,14 @@ export class ModuleManager extends BaseArrayManager<Module> {
           }
         }
 
-        return await command.run(interaction)
+        return await command.run(module.commands.logger.newScope(`Module: ${module.name} / Command: ${command.data.name}`), interaction)
       }
 
       let result: Parameters<Discord.CommandInteraction['reply']>[0]
       try {
         result = await run()
       } catch (error: any) {
-        console.error(error)
+        console.error(this.logger.error(error))
         result = {
           ephemeral: true,
           embeds: [
@@ -280,8 +293,18 @@ export class ModuleManager extends BaseArrayManager<Module> {
         }
       }
 
-      await respond(<any> result).catch(console.error)
+      await respond(<any> result).catch((error) => this.logger.error(error))
     })
+  }
+
+  public push (...items: Module[]): number {
+    const result = super.push(...items)
+
+    for (const item of items) {
+      this.logger.log(`Register module: ${item.name}`)
+    }
+
+    return result
   }
 
   private _application?: Discord.ClientApplication | null

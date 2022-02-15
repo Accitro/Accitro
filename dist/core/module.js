@@ -14,6 +14,16 @@ var Module = /** @class */ (function (_super) {
         _this.eventListeners = {};
         return _this;
     }
+    Object.defineProperty(Module.prototype, "logger", {
+        get: function () {
+            if (!this._logger) {
+                this._logger = this.moduleManager.logger.newScope("Module: ".concat(this.name));
+            }
+            return this._logger;
+        },
+        enumerable: false,
+        configurable: true
+    });
     Module.prototype.enable = function () {
         return this.moduleManager.enable(this.name);
     };
@@ -37,6 +47,7 @@ var ModuleManager = /** @class */ (function (_super) {
     function ModuleManager(client) {
         var _this = _super.call(this, client) || this;
         ModuleManager.bindEventEmitter(_this, client.events);
+        _this.logger = client.logger.newScope('Module Manager');
         return _this;
     }
     ModuleManager.bindEventEmitter = function (modules, eventEmitter) {
@@ -318,7 +329,7 @@ var ModuleManager = /** @class */ (function (_super) {
                                                                 break;
                                                         }
                                                         _a.label = 7;
-                                                    case 7: return [4 /*yield*/, command.run(interaction)];
+                                                    case 7: return [4 /*yield*/, command.run(module.commands.logger.newScope("Module: ".concat(module.name, " / Command: ").concat(command.data.name)), interaction)];
                                                     case 8: return [2 /*return*/, _a.sent()];
                                                 }
                                             });
@@ -332,7 +343,7 @@ var ModuleManager = /** @class */ (function (_super) {
                                         return [3 /*break*/, 4];
                                     case 3:
                                         error_1 = _a.sent();
-                                        console.error(error_1);
+                                        console.error(this.logger.error(error_1));
                                         result = {
                                             ephemeral: true,
                                             embeds: [
@@ -343,7 +354,7 @@ var ModuleManager = /** @class */ (function (_super) {
                                             ]
                                         };
                                         return [3 /*break*/, 4];
-                                    case 4: return [4 /*yield*/, respond(result).catch(console.error)];
+                                    case 4: return [4 /*yield*/, respond(result).catch(function (error) { return _this.logger.error(error); })];
                                     case 5:
                                         _a.sent();
                                         return [2 /*return*/];
@@ -354,6 +365,28 @@ var ModuleManager = /** @class */ (function (_super) {
                 }
             });
         });
+    };
+    ModuleManager.prototype.push = function () {
+        var e_3, _a;
+        var items = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            items[_i] = arguments[_i];
+        }
+        var result = _super.prototype.push.apply(this, (0, tslib_1.__spreadArray)([], (0, tslib_1.__read)(items), false));
+        try {
+            for (var items_1 = (0, tslib_1.__values)(items), items_1_1 = items_1.next(); !items_1_1.done; items_1_1 = items_1.next()) {
+                var item = items_1_1.value;
+                this.logger.log("Register module: ".concat(item.name));
+            }
+        }
+        catch (e_3_1) { e_3 = { error: e_3_1 }; }
+        finally {
+            try {
+                if (items_1_1 && !items_1_1.done && (_a = items_1.return)) _a.call(items_1);
+            }
+            finally { if (e_3) throw e_3.error; }
+        }
+        return result;
     };
     ModuleManager.prototype.getApplication = function () {
         var _a;

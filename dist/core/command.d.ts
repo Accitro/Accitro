@@ -2,9 +2,10 @@ import Discord from 'discord.js';
 import Crypto from 'crypto';
 import { Module } from './module';
 import { BaseArrayManager } from './base';
+import { ScopedLogger } from './logger';
 export interface Command {
     data: Discord.ChatInputApplicationCommandData;
-    run: (interaction: Discord.CommandInteraction) => (Promise<Parameters<Discord.CommandInteraction['reply']>[0]> | Parameters<Discord.CommandInteraction['reply']>[0]);
+    run: (logger: ScopedLogger, interaction: Discord.CommandInteraction) => (Promise<Parameters<Discord.CommandInteraction['reply']>[0]> | Parameters<Discord.CommandInteraction['reply']>[0]);
     defaultAccess: ({
         directSupport: true;
         direct: CommandDirectAccess;
@@ -36,6 +37,8 @@ export declare class CommandManager extends BaseArrayManager<Command> {
     get commandDirectTable(): import("..").TableQueryBuilder;
     get commandDirectAccessTable(): import("..").TableQueryBuilder;
     readonly module: Module;
+    readonly logger: ScopedLogger;
+    push(...items: Command[]): number;
     getCommand(name: string): Command | undefined;
     setGuildAccess(name: string, guildId: string, access: CommandGuildAccess): Promise<void>;
     getGuildAccess(name: string, guildId: string): Promise<CommandGuildAccess>;

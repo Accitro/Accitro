@@ -2,10 +2,11 @@ import Discord from 'discord.js'
 import Crypto from 'crypto'
 import { Module } from './module'
 import { BaseArrayManager } from './base'
+import { ScopedLogger } from './logger'
 
 export interface Command {
   data: Discord.ChatInputApplicationCommandData
-  run: (interaction: Discord.CommandInteraction) => (Promise<Parameters<Discord.CommandInteraction['reply']>[0]> | Parameters<Discord.CommandInteraction['reply']>[0])
+  run: (logger: ScopedLogger, interaction: Discord.CommandInteraction) => (Promise<Parameters<Discord.CommandInteraction['reply']>[0]> | Parameters<Discord.CommandInteraction['reply']>[0])
 
   defaultAccess:
     (
@@ -45,6 +46,7 @@ export class CommandManager extends BaseArrayManager<Command> {
     super(module.client)
 
     this.module = module
+    this.logger = module.logger.newScope(`Module: ${module.name} / Command Manager`)
   }
 
   public get commandGuildTable () {
@@ -64,6 +66,17 @@ export class CommandManager extends BaseArrayManager<Command> {
   }
 
   public readonly module: Module
+  public readonly logger: ScopedLogger
+
+  public push (...items: Command[]): number {
+    const result = super.push(...items)
+
+    for (const item of items) {
+      this.logger.log(`Register command: ${item.data.name}`)
+    }
+
+    return result
+  }
 
   public getCommand (name: string) {
     return this.find((command) => command.data.name === name)

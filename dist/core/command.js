@@ -23,6 +23,7 @@ var CommandManager = /** @class */ (function (_super) {
     function CommandManager(module) {
         var _this = _super.call(this, module.client) || this;
         _this.module = module;
+        _this.logger = module.logger.newScope("Module: ".concat(module.name, " / Command Manager"));
         return _this;
     }
     Object.defineProperty(CommandManager.prototype, "commandGuildTable", {
@@ -53,6 +54,28 @@ var CommandManager = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
+    CommandManager.prototype.push = function () {
+        var e_1, _a;
+        var items = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            items[_i] = arguments[_i];
+        }
+        var result = _super.prototype.push.apply(this, (0, tslib_1.__spreadArray)([], (0, tslib_1.__read)(items), false));
+        try {
+            for (var items_1 = (0, tslib_1.__values)(items), items_1_1 = items_1.next(); !items_1_1.done; items_1_1 = items_1.next()) {
+                var item = items_1_1.value;
+                this.logger.log("Register command: ".concat(item.data.name));
+            }
+        }
+        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        finally {
+            try {
+                if (items_1_1 && !items_1_1.done && (_a = items_1.return)) _a.call(items_1);
+            }
+            finally { if (e_1) throw e_1.error; }
+        }
+        return result;
+    };
     CommandManager.prototype.getCommand = function (name) {
         return this.find(function (command) { return command.data.name === name; });
     };
@@ -374,7 +397,7 @@ var CommandManager = /** @class */ (function (_super) {
 }(base_1.BaseArrayManager));
 exports.CommandManager = CommandManager;
 var getCommandOptionFootprint = function (data, footprint) {
-    var e_1, _a;
+    var e_2, _a;
     footprint
         .update(data.name)
         .update(data.description)
@@ -387,19 +410,19 @@ var getCommandOptionFootprint = function (data, footprint) {
                 (0, exports.getCommandOptionFootprint)(option, footprint);
             }
         }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+        catch (e_2_1) { e_2 = { error: e_2_1 }; }
         finally {
             try {
                 if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
             }
-            finally { if (e_1) throw e_1.error; }
+            finally { if (e_2) throw e_2.error; }
         }
     }
     return footprint;
 };
 exports.getCommandOptionFootprint = getCommandOptionFootprint;
 var getCommandFootprint = function (data, footprint) {
-    var e_2, _a;
+    var e_3, _a;
     if (footprint === void 0) { footprint = crypto_1.default.createHash('sha256'); }
     footprint
         .update(data.name)
@@ -411,12 +434,12 @@ var getCommandFootprint = function (data, footprint) {
             (0, exports.getCommandOptionFootprint)(option, footprint);
         }
     }
-    catch (e_2_1) { e_2 = { error: e_2_1 }; }
+    catch (e_3_1) { e_3 = { error: e_3_1 }; }
     finally {
         try {
             if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
         }
-        finally { if (e_2) throw e_2.error; }
+        finally { if (e_3) throw e_3.error; }
     }
     return footprint;
 };

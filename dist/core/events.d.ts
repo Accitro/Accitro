@@ -2,6 +2,9 @@ import Discord from 'discord.js';
 import { BaseClass } from './base';
 import { Client } from './client';
 export interface ClientEvents extends Discord.ClientEvents {
+    logInfo: [scope: string, message: string];
+    logVerbose: [scope: string, message: string];
+    logError: [scope: string, error: Error];
 }
 export declare class EventEmitter extends BaseClass {
     static bindEventEmitter(discord: Discord.Client, eventEmitter: EventEmitter): void;

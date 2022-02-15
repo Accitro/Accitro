@@ -1,6 +1,7 @@
 import Discord from 'discord.js'
 import { DatabaseCredentials, QueryBuilder } from '../database/query-builder'
 import { EventEmitter } from './events'
+import { Logger, ScopedLogger } from './logger'
 import { ModuleManager } from './module'
 
 export interface ClientOptions {
@@ -19,6 +20,8 @@ export class Client {
 
     this.on = this.events.on.bind(this.events)
     this.once = this.events.once.bind(this.events)
+
+    this.logger = new ScopedLogger(new Logger(this), 'main')
   }
 
   public readonly options: ClientOptions
@@ -29,4 +32,6 @@ export class Client {
 
   public readonly on: EventEmitter['on']
   public readonly once: EventEmitter['once']
+
+  public readonly logger: ScopedLogger
 }
