@@ -45,7 +45,8 @@ export class QueryBuilder {
         database: credentials.name,
         userName: credentials.username,
         password: credentials.password
-      }
+      },
+      client: 'mysql2'
     })
     this.tableManagers = {}
   }
