@@ -9,14 +9,16 @@ export abstract class Module extends BaseClass {
     super(manager.client)
 
     this.moduleManager = manager
+    this.commands = new CommandManager(this)
+    this.eventListeners = <this['eventListeners']> {}
   }
 
   public readonly moduleManager: ModuleManager
 
   public abstract readonly name: string
   public abstract readonly description: string
-  public abstract readonly commands: CommandManager
-  public abstract readonly eventListeners: {
+  public readonly commands: CommandManager
+  public readonly eventListeners: {
     [Property in keyof ClientEvents]: (...args: ClientEvents[Property]) => (void | Promise<void>)
   }
 

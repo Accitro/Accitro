@@ -8,8 +8,8 @@ export declare abstract class Module extends BaseClass {
     readonly moduleManager: ModuleManager;
     abstract readonly name: string;
     abstract readonly description: string;
-    abstract readonly commands: CommandManager;
-    abstract readonly eventListeners: {
+    readonly commands: CommandManager;
+    readonly eventListeners: {
         [Property in keyof ClientEvents]: (...args: ClientEvents[Property]) => (void | Promise<void>);
     };
     enable(): Promise<void>;
@@ -21,8 +21,8 @@ export declare abstract class Module extends BaseClass {
 export declare class ModuleManager extends BaseArrayManager<Module> {
     static bindEventEmitter(modules: ModuleManager, eventEmitter: EventEmitter): void;
     constructor(client: Client);
-    get moduleTable(): import("../database/query-builder").TableQueryBuilder;
-    get moduleGuildOverrideTable(): import("../database/query-builder").TableQueryBuilder;
+    get moduleTable(): import("..").TableQueryBuilder;
+    get moduleGuildOverrideTable(): import("..").TableQueryBuilder;
     publishCommands(entryList: {
         [key: string]: {
             module: Module;

@@ -31,10 +31,10 @@ export declare enum CommandDirectAccess {
 }
 export declare class CommandManager extends BaseArrayManager<Command> {
     constructor(module: Module);
-    get commandGuildTable(): import("../database/query-builder").TableQueryBuilder;
-    get commandGuildAccessTable(): import("../database/query-builder").TableQueryBuilder;
-    get commandDirectTable(): import("../database/query-builder").TableQueryBuilder;
-    get commandDirectAccessTable(): import("../database/query-builder").TableQueryBuilder;
+    get commandGuildTable(): import("..").TableQueryBuilder;
+    get commandGuildAccessTable(): import("..").TableQueryBuilder;
+    get commandDirectTable(): import("..").TableQueryBuilder;
+    get commandDirectAccessTable(): import("..").TableQueryBuilder;
     readonly module: Module;
     getCommand(name: string): Command | undefined;
     setGuildAccess(name: string, guildId: string, access: CommandGuildAccess): Promise<void>;

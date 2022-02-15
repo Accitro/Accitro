@@ -10,6 +10,8 @@ var Module = /** @class */ (function (_super) {
     function Module(manager) {
         var _this = _super.call(this, manager.client) || this;
         _this.moduleManager = manager;
+        _this.commands = new command_1.CommandManager(_this);
+        _this.eventListeners = {};
         return _this;
     }
     Module.prototype.enable = function () {
