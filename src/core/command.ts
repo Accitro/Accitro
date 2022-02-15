@@ -79,7 +79,6 @@ export class CommandManager extends BaseArrayManager<Command> {
     const result = super.push(...items)
 
     for (const item of items) {
-      console.log(item)
       this.logger.log(`Register command: ${item.data.name}`)
     }
 
