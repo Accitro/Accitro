@@ -6,7 +6,7 @@ import { ScopedLogger } from './logger'
 
 export interface Command {
   data: Discord.ChatInputApplicationCommandData
-  run: (logger: ScopedLogger, interaction: Discord.CommandInteraction) => (Promise<Parameters<Discord.CommandInteraction['reply']>[0]> | Parameters<Discord.CommandInteraction['reply']>[0])
+  run: (logger: ScopedLogger, interaction: Discord.CommandInteraction) => (Promise<Parameters<Discord.CommandInteraction['reply']>[0] | void> | Parameters<Discord.CommandInteraction['reply']>[0] | void)
 
   defaultAccess:
     (
@@ -46,7 +46,6 @@ export class CommandManager extends BaseArrayManager<Command> {
     super(module.client)
 
     this.module = module
-    this.logger = module.logger.newScope(`Module: ${module.name} / Command Manager`)
   }
 
   public get commandGuildTable () {
@@ -66,12 +65,21 @@ export class CommandManager extends BaseArrayManager<Command> {
   }
 
   public readonly module: Module
-  public readonly logger: ScopedLogger
+
+  private _logger?: ScopedLogger
+  public get logger (): ScopedLogger {
+    if (!this._logger) {
+      this._logger = this.module.logger.newScope(`Module: ${this.module.name} / Command Manager`)
+    }
+
+    return this._logger
+  }
 
   public push (...items: Command[]): number {
     const result = super.push(...items)
 
     for (const item of items) {
+      console.log(item)
       this.logger.log(`Register command: ${item.data.name}`)
     }
 

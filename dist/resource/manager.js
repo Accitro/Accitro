@@ -1,202 +1,105 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GuildMemberConfigManager = exports.UserConfigManager = exports.GuildConfigManager = exports.DataManager = exports.BaseConfigManager = exports.BaseManager = void 0;
-var tslib_1 = require("tslib");
-var path_1 = (0, tslib_1.__importDefault)(require("path"));
-var data_1 = require("./data");
-var BaseManager = /** @class */ (function () {
-    function BaseManager(client) {
+const tslib_1 = require("tslib");
+const path_1 = (0, tslib_1.__importDefault)(require("path"));
+const data_1 = require("./data");
+class BaseManager {
+    constructor(client) {
         this.client = client;
         this.database = client.database;
     }
-    return BaseManager;
-}());
+    client;
+    database;
+}
 exports.BaseManager = BaseManager;
-var BaseConfigManager = /** @class */ (function (_super) {
-    (0, tslib_1.__extends)(BaseConfigManager, _super);
-    function BaseConfigManager(client, type, id, context) {
-        var _this = _super.call(this, client) || this;
-        _this.type = type;
-        _this.id = id;
-        _this.context = context;
-        return _this;
+class BaseConfigManager extends BaseManager {
+    constructor(client, type, id, context) {
+        super(client);
+        this.type = type;
+        this.id = id;
+        this.context = context;
     }
-    Object.defineProperty(BaseConfigManager.prototype, "guildConfigTable", {
-        get: function () {
-            return this.database.getTableManager('guildConfig');
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(BaseConfigManager.prototype, "userConfigTable", {
-        get: function () {
-            return this.database.getTableManager('userConfig');
-        },
-        enumerable: false,
-        configurable: true
-    });
-    BaseConfigManager.prototype.newContext = function (context) {
-        return new BaseConfigManager(this.client, this.type, this.id, (0, tslib_1.__spreadArray)((0, tslib_1.__spreadArray)([], (0, tslib_1.__read)(this.context), false), (0, tslib_1.__read)(context), false));
-    };
-    BaseConfigManager.prototype.getKey = function (name) {
-        return (0, tslib_1.__awaiter)(this, void 0, void 0, function () {
-            return (0, tslib_1.__generator)(this, function (_a) {
-                return [2 /*return*/, path_1.default.join.apply(path_1.default, (0, tslib_1.__spreadArray)((0, tslib_1.__spreadArray)([], (0, tslib_1.__read)(this.context), false), [name], false))];
-            });
-        });
-    };
-    Object.defineProperty(BaseConfigManager.prototype, "configTable", {
-        get: function () {
-            return this.type === 'guild' ? this.guildConfigTable : this.userConfigTable;
-        },
-        enumerable: false,
-        configurable: true
-    });
-    BaseConfigManager.prototype.get = function (name, defaultValue) {
-        return (0, tslib_1.__awaiter)(this, void 0, void 0, function () {
-            var _a, configTable, id, key, result, _b, _c, _d, _e;
-            var _this = this;
-            return (0, tslib_1.__generator)(this, function (_f) {
-                switch (_f.label) {
-                    case 0:
-                        _a = this, configTable = _a.configTable, id = _a.id;
-                        key = this.getKey(name);
-                        return [4 /*yield*/, configTable.select({ id: id, key: key }).first()];
-                    case 1:
-                        result = _f.sent();
-                        if (!result) return [3 /*break*/, 2];
-                        _b = JSON.parse(result.value);
-                        return [3 /*break*/, 9];
-                    case 2:
-                        if (!(defaultValue !== undefined)) return [3 /*break*/, 7];
-                        _d = (function (value) { return (0, tslib_1.__awaiter)(_this, void 0, void 0, function () {
-                            return (0, tslib_1.__generator)(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, configTable.insert({ id: id, key: key, value: JSON.stringify(value) })];
-                                    case 1:
-                                        _a.sent();
-                                        return [2 /*return*/, value];
-                                }
-                            });
-                        }); });
-                        if (!(typeof (defaultValue) === 'function')) return [3 /*break*/, 4];
-                        return [4 /*yield*/, defaultValue()];
-                    case 3:
-                        _e = _f.sent();
-                        return [3 /*break*/, 5];
-                    case 4:
-                        _e = defaultValue;
-                        _f.label = 5;
-                    case 5: return [4 /*yield*/, _d.apply(void 0, [_e])];
-                    case 6:
-                        _c = _f.sent();
-                        return [3 /*break*/, 8];
-                    case 7:
-                        _c = undefined;
-                        _f.label = 8;
-                    case 8:
-                        _b = _c;
-                        _f.label = 9;
-                    case 9: return [2 /*return*/, _b];
-                }
-            });
-        });
-    };
-    BaseConfigManager.prototype.set = function (name, value) {
-        return (0, tslib_1.__awaiter)(this, void 0, void 0, function () {
-            var _a, configTable, id, key;
-            return (0, tslib_1.__generator)(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _a = this, configTable = _a.configTable, id = _a.id;
-                        key = this.getKey(name);
-                        return [4 /*yield*/, configTable.has({ id: id, key: key })];
-                    case 1:
-                        if (!_b.sent()) return [3 /*break*/, 3];
-                        return [4 /*yield*/, configTable.alter({ id: id, key: key }, { value: JSON.stringify(value) })];
-                    case 2:
-                        _b.sent();
-                        return [3 /*break*/, 5];
-                    case 3: return [4 /*yield*/, configTable.insert({ id: id, key: key, value: JSON.stringify(value) })];
-                    case 4:
-                        _b.sent();
-                        _b.label = 5;
-                    case 5: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    BaseConfigManager.prototype.has = function (name) {
-        return (0, tslib_1.__awaiter)(this, void 0, void 0, function () {
-            var _a, configTable, id, key;
-            return (0, tslib_1.__generator)(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _a = this, configTable = _a.configTable, id = _a.id;
-                        key = this.getKey(name);
-                        return [4 /*yield*/, configTable.has({ id: id, key: key })];
-                    case 1: return [2 /*return*/, _b.sent()];
-                }
-            });
-        });
-    };
-    BaseConfigManager.prototype.unset = function (name) {
-        return (0, tslib_1.__awaiter)(this, void 0, void 0, function () {
-            var _a, configTable, id, key;
-            return (0, tslib_1.__generator)(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _a = this, configTable = _a.configTable, id = _a.id;
-                        key = this.getKey(name);
-                        return [4 /*yield*/, configTable.drop({ id: id, key: key })];
-                    case 1:
-                        _b.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    return BaseConfigManager;
-}(BaseManager));
+    type;
+    id;
+    context;
+    get guildConfigTable() {
+        return this.database.getTableManager('guildConfig');
+    }
+    get userConfigTable() {
+        return this.database.getTableManager('userConfig');
+    }
+    newContext(context) {
+        return new BaseConfigManager(this.client, this.type, this.id, [...this.context, ...context]);
+    }
+    async getKey(name) {
+        return path_1.default.join(...this.context, name);
+    }
+    get configTable() {
+        return this.type === 'guild' ? this.guildConfigTable : this.userConfigTable;
+    }
+    async get(name, defaultValue) {
+        const { configTable, id } = this;
+        const key = this.getKey(name);
+        const result = await configTable.select({ id, key }).first();
+        return result
+            ? JSON.parse(result.value)
+            : defaultValue !== undefined
+                ? await (async (value) => {
+                    await configTable.insert({ id, key, value: JSON.stringify(value) });
+                    return value;
+                })(typeof (defaultValue) === 'function' ? await defaultValue() : defaultValue)
+                : undefined;
+    }
+    async set(name, value) {
+        const { configTable, id } = this;
+        const key = this.getKey(name);
+        if (await configTable.has({ id, key })) {
+            await configTable.alter({ id, key }, { value: JSON.stringify(value) });
+        }
+        else {
+            await configTable.insert({ id, key, value: JSON.stringify(value) });
+        }
+    }
+    async has(name) {
+        const { configTable, id } = this;
+        const key = this.getKey(name);
+        return await configTable.has({ id, key });
+    }
+    async unset(name) {
+        const { configTable, id } = this;
+        const key = this.getKey(name);
+        await configTable.drop({ id, key });
+    }
+}
 exports.BaseConfigManager = BaseConfigManager;
-var DataManager = /** @class */ (function (_super) {
-    (0, tslib_1.__extends)(DataManager, _super);
-    function DataManager() {
-        return _super !== null && _super.apply(this, arguments) || this;
-    }
-    DataManager.prototype.get = function (guild) {
+class DataManager extends BaseManager {
+    get(guild) {
         return new data_1.Guild(this.client, guild);
-    };
-    return DataManager;
-}(BaseManager));
+    }
+}
 exports.DataManager = DataManager;
-var GuildConfigManager = /** @class */ (function (_super) {
-    (0, tslib_1.__extends)(GuildConfigManager, _super);
-    function GuildConfigManager(guild, context) {
-        var _this = _super.call(this, guild.client, 'guild', guild.discordGuild.id, context) || this;
-        _this.guild = guild;
-        return _this;
+class GuildConfigManager extends BaseConfigManager {
+    constructor(guild, context) {
+        super(guild.client, 'guild', guild.discordGuild.id, context);
+        this.guild = guild;
     }
-    return GuildConfigManager;
-}(BaseConfigManager));
+    guild;
+}
 exports.GuildConfigManager = GuildConfigManager;
-var UserConfigManager = /** @class */ (function (_super) {
-    (0, tslib_1.__extends)(UserConfigManager, _super);
-    function UserConfigManager(user, context) {
-        var _this = _super.call(this, user.client, 'user', user.discordUser.id, context) || this;
-        _this.user = user;
-        return _this;
+class UserConfigManager extends BaseConfigManager {
+    constructor(user, context) {
+        super(user.client, 'user', user.discordUser.id, context);
+        this.user = user;
     }
-    return UserConfigManager;
-}(BaseConfigManager));
+    user;
+}
 exports.UserConfigManager = UserConfigManager;
-var GuildMemberConfigManager = /** @class */ (function (_super) {
-    (0, tslib_1.__extends)(GuildMemberConfigManager, _super);
-    function GuildMemberConfigManager(guildMember, context) {
-        var _this = _super.call(this, guildMember.client, 'guild', guildMember.discordGuildMember.guild.id, (0, tslib_1.__spreadArray)(["member/".concat(guildMember.discordGuildMember.id)], (0, tslib_1.__read)(context), false)) || this;
-        _this.guildMember = guildMember;
-        return _this;
+class GuildMemberConfigManager extends BaseConfigManager {
+    constructor(guildMember, context) {
+        super(guildMember.client, 'guild', guildMember.discordGuildMember.guild.id, [`member/${guildMember.discordGuildMember.id}`, ...context]);
+        this.guildMember = guildMember;
     }
-    return GuildMemberConfigManager;
-}(BaseConfigManager));
+    guildMember;
+}
 exports.GuildMemberConfigManager = GuildMemberConfigManager;

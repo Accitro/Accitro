@@ -1,39 +1,35 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GuildMember = exports.User = exports.Guild = void 0;
-var tslib_1 = require("tslib");
-var base_1 = require("../core/base");
-var manager_1 = require("./manager");
-var Guild = /** @class */ (function (_super) {
-    (0, tslib_1.__extends)(Guild, _super);
-    function Guild(client, discordGuild) {
-        var _this = _super.call(this, client) || this;
-        _this.discordGuild = discordGuild;
-        _this.config = new manager_1.GuildConfigManager(_this, []);
-        return _this;
+const base_1 = require("../core/base");
+const manager_1 = require("./manager");
+class Guild extends base_1.BaseClass {
+    constructor(client, discordGuild) {
+        super(client);
+        this.discordGuild = discordGuild;
+        this.config = new manager_1.GuildConfigManager(this, []);
     }
-    return Guild;
-}(base_1.BaseClass));
+    discordGuild;
+    config;
+}
 exports.Guild = Guild;
-var User = /** @class */ (function (_super) {
-    (0, tslib_1.__extends)(User, _super);
-    function User(client, discordUser) {
-        var _this = _super.call(this, client) || this;
-        _this.discordUser = discordUser;
-        _this.config = new manager_1.UserConfigManager(_this, []);
-        return _this;
+class User extends base_1.BaseClass {
+    constructor(client, discordUser) {
+        super(client);
+        this.discordUser = discordUser;
+        this.config = new manager_1.UserConfigManager(this, []);
     }
-    return User;
-}(base_1.BaseClass));
+    discordUser;
+    config;
+}
 exports.User = User;
-var GuildMember = /** @class */ (function (_super) {
-    (0, tslib_1.__extends)(GuildMember, _super);
-    function GuildMember(client, discordGuildMember) {
-        var _this = _super.call(this, client) || this;
-        _this.discordGuildMember = discordGuildMember;
-        _this.config = new manager_1.GuildMemberConfigManager(_this, []);
-        return _this;
+class GuildMember extends base_1.BaseClass {
+    constructor(client, discordGuildMember) {
+        super(client);
+        this.discordGuildMember = discordGuildMember;
+        this.config = new manager_1.GuildMemberConfigManager(this, []);
     }
-    return GuildMember;
-}(base_1.BaseClass));
+    discordGuildMember;
+    config;
+}
 exports.GuildMember = GuildMember;

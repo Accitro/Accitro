@@ -278,7 +278,7 @@ export class ModuleManager extends BaseArrayManager<Module> {
         return await command.run(module.commands.logger.newScope(`Module: ${module.name} / Command: ${command.data.name}`), interaction)
       }
 
-      let result: Parameters<Discord.CommandInteraction['reply']>[0]
+      let result: Parameters<Discord.CommandInteraction['reply']>[0] | void
       try {
         result = await run()
       } catch (error: any) {
@@ -294,7 +294,9 @@ export class ModuleManager extends BaseArrayManager<Module> {
         }
       }
 
-      await respond(<any> result).catch((error) => this.logger.error(error))
+      if (result) {
+        await respond(<any> result).catch((error) => this.logger.error(error))
+      }
     })
   }
 
