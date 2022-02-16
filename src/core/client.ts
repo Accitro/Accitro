@@ -16,20 +16,18 @@ export class Client {
     this.discordClient = client
     this.database = new QueryBuilder(this, databaseCredentials)
     this.events = new EventEmitter(this)
-    this.logger = new ScopedLogger(new Logger(this), 'main')
-    this.modules = new ModuleManager(this)
-
     this.on = this.events.on.bind(this.events)
     this.once = this.events.once.bind(this.events)
+    this.logger = new ScopedLogger(new Logger(this), 'main')
+    this.modules = new ModuleManager(this)
   }
 
   public readonly options: ClientOptions
   public readonly discordClient: Discord.Client
   public readonly database: QueryBuilder
   public readonly events: EventEmitter
-  public readonly logger: ScopedLogger
-  public readonly modules: ModuleManager
-
   public readonly on: EventEmitter['on']
   public readonly once: EventEmitter['once']
+  public readonly logger: ScopedLogger
+  public readonly modules: ModuleManager
 }

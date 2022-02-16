@@ -15,10 +15,10 @@ export class EventEmitter extends BaseClass {
     const newEmit = <Discord.Client['emit']><any> eventEmitter.emit
 
     discord.emit = (...args: Parameters<Discord.Client['emit']>): boolean => {
-      oldEmit.call(discord, ...args)
+      const result = oldEmit.call(discord, ...args)
       newEmit.call(eventEmitter, ...args)
 
-      return true
+      return result
     }
   }
 

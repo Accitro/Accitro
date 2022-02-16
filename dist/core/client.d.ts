@@ -12,8 +12,8 @@ export declare class Client {
     readonly discordClient: Discord.Client;
     readonly database: QueryBuilder;
     readonly events: EventEmitter;
-    readonly logger: ScopedLogger;
-    readonly modules: ModuleManager;
     readonly on: EventEmitter['on'];
     readonly once: EventEmitter['once'];
+    readonly logger: ScopedLogger;
+    readonly modules: ModuleManager;
 }

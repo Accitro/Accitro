@@ -34,7 +34,7 @@ export declare class ModuleManager extends BaseArrayManager<Module> {
         };
     }, application: Discord.ClientApplication): Promise<void>;
     init(): Promise<void>;
-    push(...items: Module[]): number;
+    add(...entries: Module[]): void;
     private _application?;
     getApplication(): Promise<Discord.ClientApplication | null>;
     enable(name: string): Promise<void>;

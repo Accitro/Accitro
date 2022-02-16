@@ -6,19 +6,17 @@ class Logger extends base_1.BaseClass {
     constructor(client) {
         const { events } = client;
         super(client);
-        this.events = events;
         events.on('debug', (message) => this.log('Discord', message));
         events.on('error', (error) => this.error('Discord', error));
     }
-    events;
     log(scope, message) {
-        this.events.emit('logInfo', scope, message);
+        this.client.events.emit('logInfo', scope, message);
     }
     verbose(scope, message) {
-        this.events.emit('logVerbose', scope, message);
+        this.client.events.emit('logVerbose', scope, message);
     }
     error(scope, error) {
-        this.events.emit('logError', scope, error);
+        this.client.events.emit('logError', scope, error);
     }
 }
 exports.Logger = Logger;

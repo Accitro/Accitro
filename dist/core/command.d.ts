@@ -1,5 +1,4 @@
 import Discord from 'discord.js';
-import Crypto from 'crypto';
 import { Module } from './module';
 import { BaseArrayManager } from './base';
 import { ScopedLogger } from './logger';
@@ -39,7 +38,7 @@ export declare class CommandManager extends BaseArrayManager<Command> {
     readonly module: Module;
     private _logger?;
     get logger(): ScopedLogger;
-    push(...items: Command[]): number;
+    add(...entries: Array<Command>): void;
     getCommand(name: string): Command | undefined;
     setGuildAccess(name: string, guildId: string, access: CommandGuildAccess): Promise<void>;
     getGuildAccess(name: string, guildId: string): Promise<CommandGuildAccess>;
@@ -54,5 +53,5 @@ export declare class CommandManager extends BaseArrayManager<Command> {
     disableDirect(name: string): Promise<void>;
     isDirectEnabled(name: string): Promise<boolean>;
 }
-export declare const getCommandOptionFootprint: (data: Discord.ApplicationCommandOption | Discord.ApplicationCommandOptionData, footprint: Crypto.Hash) => Crypto.Hash;
-export declare const getCommandFootprint: (data: Discord.ApplicationCommand | Command['data'], footprint?: Crypto.Hash) => Crypto.Hash;
+export declare const getCommandOptionFootprint: (data: Discord.ApplicationCommandOption | Discord.ApplicationCommandOptionData, footprint?: string) => string;
+export declare const getCommandFootprint: (data: Discord.ApplicationCommand | Command['data'], footprint?: string) => string;

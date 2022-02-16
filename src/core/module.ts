@@ -57,29 +57,28 @@ export abstract class Module extends BaseClass {
 export class ModuleManager extends BaseArrayManager<Module> {
   public static bindEventEmitter (modules: ModuleManager, eventEmitter: EventEmitter) {
     const oldEmit = <any> eventEmitter.emit
-    const newEmit = <any> ((name: string, ...args: Array<any>) => {
-      for (const module of modules) {
+    const newEmit = <any> (async (name: string, ...args: Array<any>) => {
+      for (const module of modules.entries) {
         const listener = (<any> module.eventListeners)[name]
 
         if (listener) {
-          listener.call(module, ...args)
+          await listener.call(module, ...args)
         }
       }
     })
 
-    eventEmitter.emit = <any> ((...args: Array<any>): boolean => {
-      oldEmit.call(eventEmitter, ...args)
-      newEmit.call(modules, ...args)
-
-      return true
+    eventEmitter.emit = <any> (async (...args: Array<any>) => {
+      await oldEmit.call(eventEmitter, ...args)
+      await newEmit.call(modules, ...args)
     })
   }
 
   public constructor (client: Client) {
     super(client)
 
-    ModuleManager.bindEventEmitter(this, client.events)
     this.logger = client.logger.newScope('Module Manager')
+    ModuleManager.bindEventEmitter(this, client.events)
+    client.on('ready', () => this.init())
   }
 
   public get moduleTable () {
@@ -93,24 +92,26 @@ export class ModuleManager extends BaseArrayManager<Module> {
   public readonly logger: ScopedLogger
 
   public async publishCommands (entryList: { [key: string]: { module: Module, command: Command } }, application: Discord.ClientApplication) {
+    const { logger } = this
+
     const commandMap: {
       [key: string]: {
-        local?: Command
+        local?: { module: Module, command: Command }
         remote?: Discord.ApplicationCommand<{ guild: Discord.GuildResolvable }> & { type: 'CHAT_INPUT' }
       }
     } = {}
 
     for (const entryKey in entryList) {
-      const { command } = entryList[entryKey]
+      const { command, module } = entryList[entryKey]
 
       if (!(command.data.name in commandMap)) {
         commandMap[command.data.name] = {}
       }
 
-      commandMap[command.data.name].local = command
+      commandMap[command.data.name].local = { command, module }
     }
 
-    for (const [, command] of application.commands.cache) {
+    for (const [, command] of await application.commands.fetch()) {
       if (!(command.name in commandMap)) {
         commandMap[command.name] = {}
       }
@@ -124,15 +125,18 @@ export class ModuleManager extends BaseArrayManager<Module> {
       const { local, remote } = commandMap[mapKey]
 
       if (local && (!remote)) {
-        await application.commands.create(local.data)
+        await application.commands.create(local.command.data)
+        logger.log(`Set chat input interaction command "${local.command.data.name}" to Discord.`)
       } else if (remote && (!local)) {
-        application.commands.delete(remote.name)
+        await application.commands.delete(remote.id)
+        logger.log(`Delete chat input interaction command "${remote.name}" from Discord.`)
       } else if (remote && local) {
         const remoteFootprint = getCommandFootprint(remote)
-        const localFootprint = getCommandFootprint(local.data)
+        const localFootprint = getCommandFootprint(local.command.data)
 
         if (remoteFootprint !== localFootprint) {
-          await application.commands.edit(remote.name, local.data)
+          await application.commands.edit(remote.id, local.command.data)
+          logger.log(`Update chat input interaction command "${remote.name}" on Discord.`)
         }
       }
     }
@@ -153,16 +157,19 @@ export class ModuleManager extends BaseArrayManager<Module> {
       }
     } = {}
 
-    await this.publishCommands(entryList, application)
-    await Promise.all(this.map(async (module) => {
+    await Promise.all(this.entries.map(async (module) => {
       const { commands } = module
 
-      await Promise.all(commands.map(async (command) => {
+      await Promise.all(commands.entries.map(async (command) => {
         if (command.data.name in entryList) {
           throw new Error(`Command name ambiguity detected: ${command.data.name}`)
         }
+
+        entryList[command.data.name] = { module, command }
       }))
     }))
+
+    await this.publishCommands(entryList, application)
 
     client.on('interaction', async (interaction) => {
       if (!interaction.isCommand()) {
@@ -288,7 +295,12 @@ export class ModuleManager extends BaseArrayManager<Module> {
           embeds: [
             {
               title: 'Fatal Error',
-              description: `${error.message}`
+              description: [
+                error.message,
+                '```plain',
+                ...error.stack.split('\n').slice(1),
+                '```'
+              ].join('\n')
             }
           ]
         }
@@ -300,14 +312,12 @@ export class ModuleManager extends BaseArrayManager<Module> {
     })
   }
 
-  public push (...items: Module[]): number {
-    const result = super.push(...items)
+  public add (...entries: Module[]) {
+    this.entries.push(...entries)
 
-    for (const item of items) {
-      this.logger.log(`Register module: ${item.name}`)
+    for (const entry of entries) {
+      this.logger.log(`Register module: ${entry.name}`)
     }
-
-    return result
   }
 
   private _application?: Discord.ClientApplication | null

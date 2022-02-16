@@ -43,7 +43,7 @@ export class QueryBuilder {
       connection: {
         host: credentials.host,
         database: credentials.name,
-        userName: credentials.username,
+        user: credentials.username,
         password: credentials.password
       },
       client: 'mysql2'

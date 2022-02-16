@@ -7,9 +7,10 @@ export declare class BaseClass extends BaseClass_base {
     constructor(client: Client);
     readonly client: Client;
 }
-export declare class BaseArrayManager<T> extends Array<T> {
+export declare class BaseArrayManager<T> {
     constructor(client: Client);
     readonly client: Client;
     readonly database: QueryBuilder;
+    readonly entries: Array<T>;
 }
 export {};

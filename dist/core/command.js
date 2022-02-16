@@ -1,8 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getCommandFootprint = exports.getCommandOptionFootprint = exports.CommandManager = exports.CommandDirectAccess = exports.CommandGuildAccess = void 0;
-const tslib_1 = require("tslib");
-const crypto_1 = (0, tslib_1.__importDefault)(require("crypto"));
 const base_1 = require("./base");
 var CommandGuildAccess;
 (function (CommandGuildAccess) {
@@ -43,15 +41,14 @@ class CommandManager extends base_1.BaseArrayManager {
         }
         return this._logger;
     }
-    push(...items) {
-        const result = super.push(...items);
-        for (const item of items) {
-            this.logger.log(`Register command: ${item.data.name}`);
+    add(...entries) {
+        this.entries.push(...entries);
+        for (const entry of entries) {
+            this.logger.log(`Register command: ${entry.data.name}`);
         }
-        return result;
     }
     getCommand(name) {
-        return this.find((command) => command.data.name === name);
+        return this.entries.find((command) => command.data.name === name);
     }
     async setGuildAccess(name, guildId, access) {
         const command = this.getCommand(name);
@@ -223,27 +220,19 @@ class CommandManager extends base_1.BaseArrayManager {
     }
 }
 exports.CommandManager = CommandManager;
-const getCommandOptionFootprint = (data, footprint) => {
-    footprint
-        .update(data.name)
-        .update(data.description)
-        .update(`${data.type}`);
-    if ((data.type === 'SUB_COMMAND') ||
-        (data.type === 'SUB_COMMAND_GROUP')) {
-        for (const option of (data.options || [])) {
-            (0, exports.getCommandOptionFootprint)(option, footprint);
-        }
-    }
+const getCommandOptionFootprint = (data, footprint = '') => {
+    footprint += data.name;
+    footprint += data.description;
+    footprint += data.type;
     return footprint;
 };
 exports.getCommandOptionFootprint = getCommandOptionFootprint;
-const getCommandFootprint = (data, footprint = crypto_1.default.createHash('sha256')) => {
-    footprint
-        .update(data.name)
-        .update(data.description)
-        .update(`${data.type}`);
-    for (const option of (data.options || [])) {
-        (0, exports.getCommandOptionFootprint)(option, footprint);
+const getCommandFootprint = (data, footprint = '') => {
+    footprint += data.name;
+    footprint += data.description;
+    footprint += data.type || 'CHAT_INPUT';
+    for (const option of data.options || []) {
+        footprint += (0, exports.getCommandFootprint)(option, footprint);
     }
     return footprint;
 };

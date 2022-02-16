@@ -42,24 +42,24 @@ exports.Module = Module;
 class ModuleManager extends base_1.BaseArrayManager {
     static bindEventEmitter(modules, eventEmitter) {
         const oldEmit = eventEmitter.emit;
-        const newEmit = ((name, ...args) => {
-            for (const module of modules) {
+        const newEmit = (async (name, ...args) => {
+            for (const module of modules.entries) {
                 const listener = module.eventListeners[name];
                 if (listener) {
-                    listener.call(module, ...args);
+                    await listener.call(module, ...args);
                 }
             }
         });
-        eventEmitter.emit = ((...args) => {
-            oldEmit.call(eventEmitter, ...args);
-            newEmit.call(modules, ...args);
-            return true;
+        eventEmitter.emit = (async (...args) => {
+            await oldEmit.call(eventEmitter, ...args);
+            await newEmit.call(modules, ...args);
         });
     }
     constructor(client) {
         super(client);
-        ModuleManager.bindEventEmitter(this, client.events);
         this.logger = client.logger.newScope('Module Manager');
+        ModuleManager.bindEventEmitter(this, client.events);
+        client.on('ready', () => this.init());
     }
     get moduleTable() {
         return this.database.getTableManager('module');
@@ -69,15 +69,16 @@ class ModuleManager extends base_1.BaseArrayManager {
     }
     logger;
     async publishCommands(entryList, application) {
+        const { logger } = this;
         const commandMap = {};
         for (const entryKey in entryList) {
-            const { command } = entryList[entryKey];
+            const { command, module } = entryList[entryKey];
             if (!(command.data.name in commandMap)) {
                 commandMap[command.data.name] = {};
             }
-            commandMap[command.data.name].local = command;
+            commandMap[command.data.name].local = { command, module };
         }
-        for (const [, command] of application.commands.cache) {
+        for (const [, command] of await application.commands.fetch()) {
             if (!(command.name in commandMap)) {
                 commandMap[command.name] = {};
             }
@@ -88,16 +89,19 @@ class ModuleManager extends base_1.BaseArrayManager {
         for (const mapKey in commandMap) {
             const { local, remote } = commandMap[mapKey];
             if (local && (!remote)) {
-                await application.commands.create(local.data);
+                await application.commands.create(local.command.data);
+                logger.log(`Set chat input interaction command "${local.command.data.name}" to Discord.`);
             }
             else if (remote && (!local)) {
-                application.commands.delete(remote.name);
+                await application.commands.delete(remote.id);
+                logger.log(`Delete chat input interaction command "${remote.name}" from Discord.`);
             }
             else if (remote && local) {
                 const remoteFootprint = (0, command_1.getCommandFootprint)(remote);
-                const localFootprint = (0, command_1.getCommandFootprint)(local.data);
+                const localFootprint = (0, command_1.getCommandFootprint)(local.command.data);
                 if (remoteFootprint !== localFootprint) {
-                    await application.commands.edit(remote.name, local.data);
+                    await application.commands.edit(remote.id, local.command.data);
+                    logger.log(`Update chat input interaction command "${remote.name}" on Discord.`);
                 }
             }
         }
@@ -109,15 +113,16 @@ class ModuleManager extends base_1.BaseArrayManager {
             throw new Error('Discord application not available');
         }
         const entryList = {};
-        await this.publishCommands(entryList, application);
-        await Promise.all(this.map(async (module) => {
+        await Promise.all(this.entries.map(async (module) => {
             const { commands } = module;
-            await Promise.all(commands.map(async (command) => {
+            await Promise.all(commands.entries.map(async (command) => {
                 if (command.data.name in entryList) {
                     throw new Error(`Command name ambiguity detected: ${command.data.name}`);
                 }
+                entryList[command.data.name] = { module, command };
             }));
         }));
+        await this.publishCommands(entryList, application);
         client.on('interaction', async (interaction) => {
             if (!interaction.isCommand()) {
                 return;
@@ -234,7 +239,12 @@ class ModuleManager extends base_1.BaseArrayManager {
                     embeds: [
                         {
                             title: 'Fatal Error',
-                            description: `${error.message}`
+                            description: [
+                                error.message,
+                                '```plain',
+                                ...error.stack.split('\n').slice(1),
+                                '```'
+                            ].join('\n')
                         }
                     ]
                 };
@@ -244,12 +254,11 @@ class ModuleManager extends base_1.BaseArrayManager {
             }
         });
     }
-    push(...items) {
-        const result = super.push(...items);
-        for (const item of items) {
-            this.logger.log(`Register module: ${item.name}`);
+    add(...entries) {
+        this.entries.push(...entries);
+        for (const entry of entries) {
+            this.logger.log(`Register module: ${entry.name}`);
         }
-        return result;
     }
     _application;
     async getApplication() {

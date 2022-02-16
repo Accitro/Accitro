@@ -7,9 +7,9 @@ class EventEmitter extends base_1.BaseClass {
         const oldEmit = discord.emit;
         const newEmit = eventEmitter.emit;
         discord.emit = (...args) => {
-            oldEmit.call(discord, ...args);
+            const result = oldEmit.call(discord, ...args);
             newEmit.call(eventEmitter, ...args);
-            return true;
+            return result;
         };
     }
     constructor(client) {

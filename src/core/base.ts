@@ -11,14 +11,14 @@ export class BaseClass extends (class {}) {
   public readonly client: Client
 }
 
-export class BaseArrayManager <T> extends Array<T> {
+export class BaseArrayManager<T> {
   public constructor (client: Client) {
-    super()
-
     this.client = client
     this.database = client.database
+    this.entries = []
   }
 
   public readonly client: Client
   public readonly database: QueryBuilder
+  public readonly entries: Array<T>
 }

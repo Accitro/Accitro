@@ -1,9 +1,7 @@
 import { BaseClass } from './base';
 import { Client } from './client';
-import { EventEmitter } from './events';
 export declare class Logger extends BaseClass {
     constructor(client: Client);
-    readonly events: EventEmitter;
     log(scope: string, message: string): void;
     verbose(scope: string, message: string): void;
     error(scope: string, error: Error): void;

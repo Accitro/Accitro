@@ -75,18 +75,16 @@ export class CommandManager extends BaseArrayManager<Command> {
     return this._logger
   }
 
-  public push (...items: Command[]): number {
-    const result = super.push(...items)
+  public add (...entries: Array<Command>) {
+    this.entries.push(...entries)
 
-    for (const item of items) {
-      this.logger.log(`Register command: ${item.data.name}`)
+    for (const entry of entries) {
+      this.logger.log(`Register command: ${entry.data.name}`)
     }
-
-    return result
   }
 
   public getCommand (name: string) {
-    return this.find((command) => command.data.name === name)
+    return this.entries.find((command) => command.data.name === name)
   }
 
   public async setGuildAccess (name: string, guildId: string, access: CommandGuildAccess) {
@@ -266,32 +264,21 @@ export class CommandManager extends BaseArrayManager<Command> {
   }
 }
 
-export const getCommandOptionFootprint = (data: Discord.ApplicationCommandOption | Discord.ApplicationCommandOptionData, footprint: Crypto.Hash) => {
-  footprint
-    .update(data.name)
-    .update(data.description)
-    .update(`${data.type}`)
-
-  if (
-    (data.type === 'SUB_COMMAND') ||
-    (data.type === 'SUB_COMMAND_GROUP')
-  ) {
-    for (const option of (data.options || [])) {
-      getCommandOptionFootprint(option, footprint)
-    }
-  }
+export const getCommandOptionFootprint = (data: Discord.ApplicationCommandOption | Discord.ApplicationCommandOptionData, footprint: string = '') => {
+  footprint += data.name
+  footprint += data.description
+  footprint += data.type
 
   return footprint
 }
 
-export const getCommandFootprint = (data: Discord.ApplicationCommand | Command['data'], footprint: Crypto.Hash = Crypto.createHash('sha256')) => {
-  footprint
-    .update(data.name)
-    .update(data.description)
-    .update(`${data.type}`)
+export const getCommandFootprint = (data: Discord.ApplicationCommand | Command['data'], footprint: string = '') => {
+  footprint += data.name
+  footprint += data.description
+  footprint += data.type || 'CHAT_INPUT'
 
-  for (const option of (data.options || [])) {
-    getCommandOptionFootprint(option, footprint)
+  for (const option of data.options || []) {
+    footprint += getCommandFootprint(<any> option, footprint)
   }
 
   return footprint

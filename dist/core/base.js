@@ -10,13 +10,14 @@ class BaseClass extends (class {
     client;
 }
 exports.BaseClass = BaseClass;
-class BaseArrayManager extends Array {
+class BaseArrayManager {
     constructor(client) {
-        super();
         this.client = client;
         this.database = client.database;
+        this.entries = [];
     }
     client;
     database;
+    entries;
 }
 exports.BaseArrayManager = BaseArrayManager;
