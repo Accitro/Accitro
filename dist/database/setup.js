@@ -34,6 +34,10 @@ exports.tableSetupAssoc = (() => {
         table.string('key').index().notNullable();
         table.json('value').notNullable();
     };
+    const globalConfig = (table) => {
+        table.string('key').index().notNullable();
+        table.json('value').notNullable();
+    };
     return [
         ['module', module],
         ['moduleGuildOverride', moduleGuildOverride],
@@ -42,6 +46,7 @@ exports.tableSetupAssoc = (() => {
         ['commandDirect', commandDirect],
         ['commandDirectAccess', commandDirectAccess],
         ['guildConfig', config],
-        ['userConfig', config]
+        ['userConfig', config],
+        ['globalConfig', globalConfig]
     ];
 })();

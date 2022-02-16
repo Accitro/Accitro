@@ -42,6 +42,11 @@ export const tableSetupAssoc = ((): Array<[string, (table: TableBuilder) => void
     table.json('value').notNullable()
   }
 
+  const globalConfig = (table: TableBuilder) => {
+    table.string('key').index().notNullable()
+    table.json('value').notNullable()
+  }
+
   return [
     ['module', module],
     ['moduleGuildOverride', moduleGuildOverride],
@@ -50,6 +55,7 @@ export const tableSetupAssoc = ((): Array<[string, (table: TableBuilder) => void
     ['commandDirect', commandDirect],
     ['commandDirectAccess', commandDirectAccess],
     ['guildConfig', config],
-    ['userConfig', config]
+    ['userConfig', config],
+    ['globalConfig', globalConfig]
   ]
 })()

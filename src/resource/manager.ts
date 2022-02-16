@@ -15,6 +15,63 @@ export class BaseManager {
   public readonly database: QueryBuilder
 }
 
+export class GlobalConfigManager extends BaseManager {
+  public constructor (client: Client, context: Array<string>) {
+    super(client)
+
+    this.context = context
+  }
+
+  public readonly context: Array<string>
+
+  public get globalConfigTable () {
+    return this.database.getTableManager('globalConfig')
+  }
+
+  public newContext (context: Array<string>) {
+    return new GlobalConfigManager(this.client, [...this.context, ...context])
+  }
+
+  public async getKey (name: string) {
+    return Path.join(...this.context, name)
+  }
+
+  public async get (name: string, defaultValue?: any) {
+    const { globalConfigTable } = this
+    const key = this.getKey(name)
+
+    const result = await globalConfigTable.select({ key }).first()
+    return result
+      ? JSON.parse(result.value)
+      : defaultValue !== undefined
+        ? await (async (value) => {
+          await globalConfigTable.insert({ key, value: JSON.stringify(value) })
+
+          return value
+        })(typeof (defaultValue) === 'function' ? await defaultValue() : defaultValue)
+        : undefined
+  }
+
+  public async set (name: string, value: any) {
+    const { globalConfigTable } = this
+    const key = this.getKey(name)
+
+    if (await globalConfigTable.has({ key })) {
+      await globalConfigTable.alter({ key }, { value: JSON.stringify(value) })
+    } else {
+      await globalConfigTable.insert({ key, value: JSON.stringify(value) })
+    }
+  }
+
+  public async has (name: string) {
+    return await this.globalConfigTable.has({ key: this.getKey(name) })
+  }
+
+  public async unset (name: string) {
+    await this.globalConfigTable.drop({ key: this.getKey(name) })
+  }
+}
+
 export class BaseConfigManager<T extends 'guild' | 'user'> extends BaseManager {
   public constructor (client: Client, type: T, id: string, context: Array<string>) {
     super(client)
@@ -36,16 +93,16 @@ export class BaseConfigManager<T extends 'guild' | 'user'> extends BaseManager {
     return this.database.getTableManager('userConfig')
   }
 
+  public get configTable () {
+    return this.type === 'guild' ? this.guildConfigTable : this.userConfigTable
+  }
+
   public newContext (context: Array<string>) {
     return new BaseConfigManager(this.client, this.type, this.id, [...this.context, ...context])
   }
 
   public async getKey (name: string) {
     return Path.join(...this.context, name)
-  }
-
-  public get configTable () {
-    return this.type === 'guild' ? this.guildConfigTable : this.userConfigTable
   }
 
   public async get (name: string, defaultValue?: any) {
@@ -103,6 +160,10 @@ export class GuildConfigManager extends BaseConfigManager<'guild'> {
     this.guild = guild
   }
 
+  public newContext (context: string[]): BaseConfigManager<'guild'> {
+    return new GuildConfigManager(this.guild, [...this.context, ...context])
+  }
+
   public readonly guild: Guild
 }
 
@@ -111,6 +172,10 @@ export class UserConfigManager extends BaseConfigManager<'user'> {
     super(user.client, 'user', user.discordUser.id, context)
 
     this.user = user
+  }
+
+  public newContext (context: string[]): BaseConfigManager<'user'> {
+    return new UserConfigManager(this.user, [...this.context, ...context])
   }
 
   public readonly user: User
