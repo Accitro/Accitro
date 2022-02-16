@@ -1,4 +1,5 @@
 import Discord from 'discord.js'
+import { GlobalConfigManager } from '../Accitro'
 import { DatabaseCredentials, QueryBuilder } from '../database/query-builder'
 import { EventEmitter } from './events'
 import { Logger, ScopedLogger } from './logger'
@@ -20,6 +21,7 @@ export class Client {
     this.once = this.events.once.bind(this.events)
     this.logger = new ScopedLogger(new Logger(this), 'main')
     this.modules = new ModuleManager(this)
+    this.config = new GlobalConfigManager(this, [])
   }
 
   public readonly options: ClientOptions
@@ -30,4 +32,5 @@ export class Client {
   public readonly once: EventEmitter['once']
   public readonly logger: ScopedLogger
   public readonly modules: ModuleManager
+  public readonly config: GlobalConfigManager
 }
