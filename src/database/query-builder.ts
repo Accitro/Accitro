@@ -49,6 +49,7 @@ export class QueryBuilder {
       client: 'mysql2'
     })
     this.tableManagers = {}
+    this.client.on('ready', () => this.setupTables())
   }
 
   public readonly client: Client

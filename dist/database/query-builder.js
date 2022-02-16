@@ -36,6 +36,7 @@ class QueryBuilder {
             client: 'mysql2'
         });
         this.tableManagers = {};
+        this.client.on('ready', () => this.setupTables());
     }
     client;
     knex;
