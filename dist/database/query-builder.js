@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QueryBuilder = exports.TableQueryBuilder = void 0;
 const tslib_1 = require("tslib");
-const knex_1 = (0, tslib_1.__importDefault)(require("knex"));
+const knex_1 = tslib_1.__importDefault(require("knex"));
 const setup_1 = require("./setup");
 class TableQueryBuilder {
     constructor(query, name) {

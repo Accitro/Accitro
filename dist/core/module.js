@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModuleManager = exports.Module = void 0;
 const tslib_1 = require("tslib");
-const discord_js_1 = (0, tslib_1.__importDefault)(require("discord.js"));
+const discord_js_1 = tslib_1.__importDefault(require("discord.js"));
 const base_1 = require("./base");
 const command_1 = require("./command");
 class Module extends base_1.BaseClass {

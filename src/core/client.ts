@@ -15,10 +15,10 @@ export class Client {
   public constructor (client: Discord.Client, databaseCredentials: DatabaseCredentials, options?: Partial<ClientOptions>) {
     this.options = Object.assign(Client.defaultOptions, options)
     this.discordClient = client
-    this.database = new QueryBuilder(this, databaseCredentials)
     this.events = new EventEmitter(this)
     this.on = this.events.on.bind(this.events)
     this.once = this.events.once.bind(this.events)
+    this.database = new QueryBuilder(this, databaseCredentials)
     this.logger = new ScopedLogger(new Logger(this), 'main')
     this.modules = new ModuleManager(this)
     this.config = new GlobalConfigManager(this, [])

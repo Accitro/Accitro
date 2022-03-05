@@ -11,10 +11,10 @@ class Client {
     constructor(client, databaseCredentials, options) {
         this.options = Object.assign(Client.defaultOptions, options);
         this.discordClient = client;
-        this.database = new query_builder_1.QueryBuilder(this, databaseCredentials);
         this.events = new events_1.EventEmitter(this);
         this.on = this.events.on.bind(this.events);
         this.once = this.events.once.bind(this.events);
+        this.database = new query_builder_1.QueryBuilder(this, databaseCredentials);
         this.logger = new logger_1.ScopedLogger(new logger_1.Logger(this), 'main');
         this.modules = new module_1.ModuleManager(this);
         this.config = new Accitro_1.GlobalConfigManager(this, []);

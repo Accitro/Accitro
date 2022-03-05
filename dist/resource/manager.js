@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GuildMemberConfigManager = exports.UserConfigManager = exports.GuildConfigManager = exports.DataManager = exports.BaseConfigManager = exports.GlobalConfigManager = exports.BaseManager = void 0;
 const tslib_1 = require("tslib");
-const path_1 = (0, tslib_1.__importDefault)(require("path"));
+const path_1 = tslib_1.__importDefault(require("path"));
 const data_1 = require("./data");
 class BaseManager {
     constructor(client) {
