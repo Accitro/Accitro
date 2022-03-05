@@ -25,7 +25,7 @@ class GlobalConfigManager extends BaseManager {
     newContext(context) {
         return new GlobalConfigManager(this.client, [...this.context, ...context]);
     }
-    async getKey(name) {
+    getKey(name) {
         return path_1.default.join(...this.context, name);
     }
     async get(name, defaultValue) {
@@ -81,7 +81,7 @@ class BaseConfigManager extends BaseManager {
     newContext(context) {
         return new BaseConfigManager(this.client, this.type, this.id, [...this.context, ...context]);
     }
-    async getKey(name) {
+    getKey(name) {
         return path_1.default.join(...this.context, name);
     }
     async get(name, defaultValue) {

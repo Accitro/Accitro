@@ -12,7 +12,7 @@ export declare class GlobalConfigManager extends BaseManager {
     readonly context: Array<string>;
     get globalConfigTable(): import("../database/query-builder").TableQueryBuilder;
     newContext(context: Array<string>): GlobalConfigManager;
-    getKey(name: string): Promise<string>;
+    getKey(name: string): string;
     get(name: string, defaultValue?: any): Promise<any>;
     set(name: string, value: any): Promise<void>;
     has(name: string): Promise<boolean>;
@@ -27,7 +27,7 @@ export declare class BaseConfigManager<T extends 'guild' | 'user'> extends BaseM
     get userConfigTable(): import("../database/query-builder").TableQueryBuilder;
     get configTable(): import("../database/query-builder").TableQueryBuilder;
     newContext(context: Array<string>): BaseConfigManager<T>;
-    getKey(name: string): Promise<string>;
+    getKey(name: string): string;
     get(name: string, defaultValue?: any): Promise<any>;
     set(name: string, value: any): Promise<void>;
     has(name: string): Promise<boolean>;

@@ -32,7 +32,7 @@ export class GlobalConfigManager extends BaseManager {
     return new GlobalConfigManager(this.client, [...this.context, ...context])
   }
 
-  public async getKey (name: string) {
+  public getKey (name: string) {
     return Path.join(...this.context, name)
   }
 
@@ -101,7 +101,7 @@ export class BaseConfigManager<T extends 'guild' | 'user'> extends BaseManager {
     return new BaseConfigManager(this.client, this.type, this.id, [...this.context, ...context])
   }
 
-  public async getKey (name: string) {
+  public getKey (name: string) {
     return Path.join(...this.context, name)
   }
 

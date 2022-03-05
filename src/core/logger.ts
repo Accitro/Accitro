@@ -1,6 +1,5 @@
 import { BaseClass } from './base'
 import { Client } from './client'
-import { EventEmitter } from './events'
 
 export class Logger extends BaseClass {
   public constructor (client: Client) {
