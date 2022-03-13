@@ -221,62 +221,99 @@ export class ModuleManager extends BaseArrayManager<Module> {
             throw new Error('Cannot fetch bot member.')
           }
 
-          switch (await module.commands.getGuildAccess(command.data.name, guildId)) {
-            case CommandGuildAccess.WithRole:
-              if (member.roles.highest.id === guild.id) {
-                throw new Error('User must have at least one role.')
-              }
-              break
-
-            case CommandGuildAccess.WithHigherRole:
-              if (member.roles.highest.position < meMember.roles.highest.position) {
-                throw new Error('User must have at list one role that is higher than the bot role.')
-              }
-              break
-
-            case CommandGuildAccess.Administrator:
-              if (!member.permissions.has('ADMINISTRATOR')) {
-                throw new Error('User must be an administrator.')
-              }
-              break
-
-            case CommandGuildAccess.GuildOwner:
-              if (guild.ownerId !== member.id) {
-                throw new Error('User must be the guild owner.')
-              }
-              break
-
+          const guildAccess = await module.commands.getGuildAccess(command.data.name, guildId)
+          switch (guildAccess) {
             case CommandGuildAccess.BotOwner:
               if (application.owner instanceof Discord.Team) {
                 if (!application.owner.members.find((teamMember) => teamMember.id === member.id)) {
-                  throw new Error('User must be one of the bot owners.')
+                  if (guildAccess >= CommandGuildAccess.BotOwner) {
+                    throw new Error('User must be one of the bot owners.')
+                  }
+                } else {
+                  break
                 }
               } else if (application.owner instanceof Discord.User) {
                 if (application.owner.id !== member.id) {
-                  throw new Error('User must be the bot owner.')
+                  if (guildAccess >= CommandGuildAccess.BotOwner) {
+                    throw new Error('User must be the bot owner.')
+                  }
+                } else {
+                  break
                 }
               } else {
-                throw new Error('Cannot fetch discord application.')
+                if (guildAccess >= CommandGuildAccess.BotOwner) {
+                  throw new Error('Cannot fetch discord application.')
+                }
               }
-              break
+
+            // eslint-disable-next-line no-fallthrough
+            case CommandGuildAccess.GuildOwner:
+              if (guild.ownerId !== member.id) {
+                if (guildAccess >= CommandGuildAccess.GuildOwner) {
+                  throw new Error('User must be the guild owner.')
+                }
+              } else {
+                break
+              }
+
+            // eslint-disable-next-line no-fallthrough
+            case CommandGuildAccess.Administrator:
+              if (!member.permissions.has('ADMINISTRATOR')) {
+                if (guildAccess >= CommandGuildAccess.Administrator) {
+                  throw new Error('User must be an administrator.')
+                }
+              } else {
+                break
+              }
+
+            // eslint-disable-next-line no-fallthrough
+            case CommandGuildAccess.WithHigherRole:
+              if (member.roles.highest.position < meMember.roles.highest.position) {
+                if (guildAccess >= CommandGuildAccess.WithHigherRole) {
+                  throw new Error('User must have at list one role that is higher than the bot role.')
+                }
+              } else {
+                break
+              }
+
+            // eslint-disable-next-line no-fallthrough
+            case CommandGuildAccess.WithRole:
+              if (member.roles.highest.id === guild.id) {
+                if (guildAccess >= CommandGuildAccess.WithRole) {
+                  throw new Error('User must have at least one role.')
+                }
+              } else {
+                break
+              }
           }
         } else {
           if (!await module.commands.isDirectEnabled(command.data.name)) {
             throw new Error('Command is disabled on direct.')
           }
 
+          const directAccess = await module.commands.getDirectAccess(command.data.name)
           switch (await module.commands.getDirectAccess(command.data.name)) {
             case CommandDirectAccess.BotOwner:
               if (application.owner instanceof Discord.Team) {
                 if (!application.owner.members.find((teamMember) => teamMember.id === user.id)) {
-                  throw new Error('User must be one of the bot owners.')
+                  if (directAccess >= CommandDirectAccess.BotOwner) {
+                    throw new Error('User must be one of the bot owners.')
+                  }
+                } else {
+                  break
                 }
               } else if (application.owner instanceof Discord.User) {
                 if (application.owner.id !== user.id) {
-                  throw new Error('User must be the bot owner.')
+                  if (directAccess >= CommandDirectAccess.BotOwner) {
+                    throw new Error('User must be the bot owner.')
+                  }
+                } else {
+                  break
                 }
               } else {
-                throw new Error('Cannot fetch discord application.')
+                if (directAccess >= CommandDirectAccess.BotOwner) {
+                  throw new Error('Cannot fetch discord application.')
+                }
               }
               break
           }

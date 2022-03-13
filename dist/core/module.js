@@ -166,62 +166,107 @@ class ModuleManager extends base_1.BaseArrayManager {
                     if (!meMember) {
                         throw new Error('Cannot fetch bot member.');
                     }
-                    switch (await module.commands.getGuildAccess(command.data.name, guildId)) {
-                        case command_1.CommandGuildAccess.WithRole:
-                            if (member.roles.highest.id === guild.id) {
-                                throw new Error('User must have at least one role.');
-                            }
-                            break;
-                        case command_1.CommandGuildAccess.WithHigherRole:
-                            if (member.roles.highest.position < meMember.roles.highest.position) {
-                                throw new Error('User must have at list one role that is higher than the bot role.');
-                            }
-                            break;
-                        case command_1.CommandGuildAccess.Administrator:
-                            if (!member.permissions.has('ADMINISTRATOR')) {
-                                throw new Error('User must be an administrator.');
-                            }
-                            break;
-                        case command_1.CommandGuildAccess.GuildOwner:
-                            if (guild.ownerId !== member.id) {
-                                throw new Error('User must be the guild owner.');
-                            }
-                            break;
+                    const guildAccess = await module.commands.getGuildAccess(command.data.name, guildId);
+                    switch (guildAccess) {
                         case command_1.CommandGuildAccess.BotOwner:
                             if (application.owner instanceof discord_js_1.default.Team) {
                                 if (!application.owner.members.find((teamMember) => teamMember.id === member.id)) {
-                                    throw new Error('User must be one of the bot owners.');
+                                    if (guildAccess >= command_1.CommandGuildAccess.BotOwner) {
+                                        throw new Error('User must be one of the bot owners.');
+                                    }
+                                }
+                                else {
+                                    break;
                                 }
                             }
                             else if (application.owner instanceof discord_js_1.default.User) {
                                 if (application.owner.id !== member.id) {
-                                    throw new Error('User must be the bot owner.');
+                                    if (guildAccess >= command_1.CommandGuildAccess.BotOwner) {
+                                        throw new Error('User must be the bot owner.');
+                                    }
+                                }
+                                else {
+                                    break;
                                 }
                             }
                             else {
-                                throw new Error('Cannot fetch discord application.');
+                                if (guildAccess >= command_1.CommandGuildAccess.BotOwner) {
+                                    throw new Error('Cannot fetch discord application.');
+                                }
                             }
-                            break;
+                        // eslint-disable-next-line no-fallthrough
+                        case command_1.CommandGuildAccess.GuildOwner:
+                            if (guild.ownerId !== member.id) {
+                                if (guildAccess >= command_1.CommandGuildAccess.GuildOwner) {
+                                    throw new Error('User must be the guild owner.');
+                                }
+                            }
+                            else {
+                                break;
+                            }
+                        // eslint-disable-next-line no-fallthrough
+                        case command_1.CommandGuildAccess.Administrator:
+                            if (!member.permissions.has('ADMINISTRATOR')) {
+                                if (guildAccess >= command_1.CommandGuildAccess.Administrator) {
+                                    throw new Error('User must be an administrator.');
+                                }
+                            }
+                            else {
+                                break;
+                            }
+                        // eslint-disable-next-line no-fallthrough
+                        case command_1.CommandGuildAccess.WithHigherRole:
+                            if (member.roles.highest.position < meMember.roles.highest.position) {
+                                if (guildAccess >= command_1.CommandGuildAccess.WithHigherRole) {
+                                    throw new Error('User must have at list one role that is higher than the bot role.');
+                                }
+                            }
+                            else {
+                                break;
+                            }
+                        // eslint-disable-next-line no-fallthrough
+                        case command_1.CommandGuildAccess.WithRole:
+                            if (member.roles.highest.id === guild.id) {
+                                if (guildAccess >= command_1.CommandGuildAccess.WithRole) {
+                                    throw new Error('User must have at least one role.');
+                                }
+                            }
+                            else {
+                                break;
+                            }
                     }
                 }
                 else {
                     if (!await module.commands.isDirectEnabled(command.data.name)) {
                         throw new Error('Command is disabled on direct.');
                     }
+                    const directAccess = await module.commands.getDirectAccess(command.data.name);
                     switch (await module.commands.getDirectAccess(command.data.name)) {
                         case command_1.CommandDirectAccess.BotOwner:
                             if (application.owner instanceof discord_js_1.default.Team) {
                                 if (!application.owner.members.find((teamMember) => teamMember.id === user.id)) {
-                                    throw new Error('User must be one of the bot owners.');
+                                    if (directAccess >= command_1.CommandDirectAccess.BotOwner) {
+                                        throw new Error('User must be one of the bot owners.');
+                                    }
+                                }
+                                else {
+                                    break;
                                 }
                             }
                             else if (application.owner instanceof discord_js_1.default.User) {
                                 if (application.owner.id !== user.id) {
-                                    throw new Error('User must be the bot owner.');
+                                    if (directAccess >= command_1.CommandDirectAccess.BotOwner) {
+                                        throw new Error('User must be the bot owner.');
+                                    }
+                                }
+                                else {
+                                    break;
                                 }
                             }
                             else {
-                                throw new Error('Cannot fetch discord application.');
+                                if (directAccess >= command_1.CommandDirectAccess.BotOwner) {
+                                    throw new Error('Cannot fetch discord application.');
+                                }
                             }
                             break;
                     }
