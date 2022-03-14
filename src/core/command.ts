@@ -472,7 +472,7 @@ export class CommandRunner extends BaseClass {
       if (guildAccess <= CommandGuildAccess.WithHigherRole) {
         if (member.roles.highest.position < meMember.roles.highest.position) {
           if (guildAccess >= CommandGuildAccess.WithHigherRole) {
-            throw new CommandError('User must have at list one role that is higher than the bot role.')
+            throw new CommandError('User must have at least one role that is higher than the bot role.')
           }
         } else {
           return
