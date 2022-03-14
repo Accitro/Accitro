@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CommandRunner = exports.getCommandFootprint = exports.getCommandOptionFootprint = exports.CommandManager = exports.CommandDirectAccess = exports.CommandGuildAccess = void 0;
+exports.CommandRunner = exports.CommandError = exports.getCommandFootprint = exports.getCommandOptionFootprint = exports.CommandManager = exports.CommandDirectAccess = exports.CommandGuildAccess = void 0;
 const tslib_1 = require("tslib");
 const discord_js_1 = tslib_1.__importDefault(require("discord.js"));
 const base_1 = require("./base");
@@ -239,6 +239,17 @@ const getCommandFootprint = (data, footprint = '') => {
     return footprint;
 };
 exports.getCommandFootprint = getCommandFootprint;
+class CommandError extends Error {
+    constructor(message) {
+        const { errorMessage, errorStack } = message instanceof Error
+            ? { errorMessage: message.message, errorStack: message.stack }
+            : { errorMessage: message, errorStack: undefined };
+        super(errorMessage);
+        this.name = 'Command Error';
+        this.stack = errorStack || this.stack;
+    }
+}
+exports.CommandError = CommandError;
 class CommandRunner extends base_1.BaseClass {
     constructor(moduleManager) {
         super(moduleManager.client);
@@ -318,26 +329,26 @@ class CommandRunner extends base_1.BaseClass {
         const { guildId } = interaction;
         if (guildId) {
             if (!await module.commands.isGuildEnabled(command.data.name, guildId)) {
-                throw new Error('Command is disabled on guilds.');
+                throw new CommandError('Command is disabled on guilds.');
             }
             const guild = client.discordClient.guilds.cache.get(guildId);
             if (!guild) {
-                throw new Error('Cannot fetch guild.');
+                throw new CommandError('Cannot fetch guild.');
             }
             const member = guild.members.cache.get(user.id);
             if (!member) {
-                throw new Error('Cannot fetch member.');
+                throw new CommandError('Cannot fetch member.');
             }
             const meMember = guild.me;
             if (!meMember) {
-                throw new Error('Cannot fetch bot member.');
+                throw new CommandError('Cannot fetch bot member.');
             }
             const guildAccess = await module.commands.getGuildAccess(command.data.name, guildId);
             if (guildAccess <= CommandGuildAccess.BotOwner) {
                 if (application.owner instanceof discord_js_1.default.Team) {
                     if (!application.owner.members.find((teamMember) => teamMember.id === member.id)) {
                         if (guildAccess === CommandGuildAccess.BotOwner) {
-                            throw new Error('User must be one of the bot owners.');
+                            throw new CommandError('User must be one of the bot owners.');
                         }
                     }
                     else {
@@ -347,7 +358,7 @@ class CommandRunner extends base_1.BaseClass {
                 else if (application.owner instanceof discord_js_1.default.User) {
                     if (application.owner.id !== member.id) {
                         if (guildAccess === CommandGuildAccess.BotOwner) {
-                            throw new Error('User must be the bot owner.');
+                            throw new CommandError('User must be the bot owner.');
                         }
                     }
                     else {
@@ -356,14 +367,14 @@ class CommandRunner extends base_1.BaseClass {
                 }
                 else {
                     if (guildAccess >= CommandGuildAccess.BotOwner) {
-                        throw new Error('Cannot fetch discord application.');
+                        throw new CommandError('Cannot fetch discord application.');
                     }
                 }
             }
             if (guildAccess <= CommandGuildAccess.GuildOwner) {
                 if (guild.ownerId !== member.id) {
                     if (guildAccess >= CommandGuildAccess.GuildOwner) {
-                        throw new Error('User must be the guild owner.');
+                        throw new CommandError('User must be the guild owner.');
                     }
                 }
                 else {
@@ -373,7 +384,7 @@ class CommandRunner extends base_1.BaseClass {
             if (guildAccess <= CommandGuildAccess.Administrator) {
                 if (!member.permissions.has('ADMINISTRATOR')) {
                     if (guildAccess >= CommandGuildAccess.Administrator) {
-                        throw new Error('User must be an administrator.');
+                        throw new CommandError('User must be an administrator.');
                     }
                 }
                 else {
@@ -383,7 +394,7 @@ class CommandRunner extends base_1.BaseClass {
             if (guildAccess <= CommandGuildAccess.WithHigherRole) {
                 if (member.roles.highest.position < meMember.roles.highest.position) {
                     if (guildAccess >= CommandGuildAccess.WithHigherRole) {
-                        throw new Error('User must have at list one role that is higher than the bot role.');
+                        throw new CommandError('User must have at list one role that is higher than the bot role.');
                     }
                 }
                 else {
@@ -393,34 +404,34 @@ class CommandRunner extends base_1.BaseClass {
             if (guildAccess <= CommandGuildAccess.WithRole) {
                 if (member.roles.highest.id === guild.id) {
                     if (guildAccess >= CommandGuildAccess.WithRole) {
-                        throw new Error('User must have at least one role.');
+                        throw new CommandError('User must have at least one role.');
                     }
                 }
             }
         }
         else {
             if (!await module.commands.isDirectEnabled(command.data.name)) {
-                throw new Error('Command is disabled on direct.');
+                throw new CommandError('Command is disabled on direct.');
             }
             const directAccess = await module.commands.getDirectAccess(command.data.name);
             if (directAccess <= CommandDirectAccess.BotOwner) {
                 if (application.owner instanceof discord_js_1.default.Team) {
                     if (!application.owner.members.find((teamMember) => teamMember.id === user.id)) {
                         if (directAccess >= CommandDirectAccess.BotOwner) {
-                            throw new Error('User must be one of the bot owners.');
+                            throw new CommandError('User must be one of the bot owners.');
                         }
                     }
                 }
                 else if (application.owner instanceof discord_js_1.default.User) {
                     if (application.owner.id !== user.id) {
                         if (directAccess >= CommandDirectAccess.BotOwner) {
-                            throw new Error('User must be the bot owner.');
+                            throw new CommandError('User must be the bot owner.');
                         }
                     }
                 }
                 else {
                     if (directAccess >= CommandDirectAccess.BotOwner) {
-                        throw new Error('Cannot fetch discord application.');
+                        throw new CommandError('Cannot fetch discord application.');
                     }
                 }
             }
@@ -470,7 +481,7 @@ class CommandRunner extends base_1.BaseClass {
                     ephemeral: true,
                     embeds: [
                         {
-                            title: 'Fatal Error',
+                            title: `Fatal: ${error.name}`,
                             description: [
                                 error.message,
                                 '```plain',

@@ -285,6 +285,19 @@ export const getCommandFootprint = (data: Discord.ApplicationCommand | Command['
   return footprint
 }
 
+export class CommandError extends Error {
+  public constructor (message: Error | string) {
+    const { errorMessage, errorStack } = message instanceof Error
+      ? { errorMessage: message.message, errorStack: message.stack }
+      : { errorMessage: message, errorStack: undefined }
+
+    super(errorMessage)
+
+    this.name = 'Command Error'
+    this.stack = errorStack || this.stack
+  }
+}
+
 export class CommandRunner extends BaseClass {
   public constructor (moduleManager: ModuleManager) {
     super(moduleManager.client)
@@ -393,22 +406,22 @@ export class CommandRunner extends BaseClass {
 
     if (guildId) {
       if (!await module.commands.isGuildEnabled(command.data.name, guildId)) {
-        throw new Error('Command is disabled on guilds.')
+        throw new CommandError('Command is disabled on guilds.')
       }
 
       const guild = client.discordClient.guilds.cache.get(guildId)
       if (!guild) {
-        throw new Error('Cannot fetch guild.')
+        throw new CommandError('Cannot fetch guild.')
       }
 
       const member = guild.members.cache.get(user.id)
       if (!member) {
-        throw new Error('Cannot fetch member.')
+        throw new CommandError('Cannot fetch member.')
       }
 
       const meMember = guild.me
       if (!meMember) {
-        throw new Error('Cannot fetch bot member.')
+        throw new CommandError('Cannot fetch bot member.')
       }
 
       const guildAccess = await module.commands.getGuildAccess(command.data.name, guildId)
@@ -416,7 +429,7 @@ export class CommandRunner extends BaseClass {
         if (application.owner instanceof Discord.Team) {
           if (!application.owner.members.find((teamMember) => teamMember.id === member.id)) {
             if (guildAccess === CommandGuildAccess.BotOwner) {
-              throw new Error('User must be one of the bot owners.')
+              throw new CommandError('User must be one of the bot owners.')
             }
           } else {
             return
@@ -424,14 +437,14 @@ export class CommandRunner extends BaseClass {
         } else if (application.owner instanceof Discord.User) {
           if (application.owner.id !== member.id) {
             if (guildAccess === CommandGuildAccess.BotOwner) {
-              throw new Error('User must be the bot owner.')
+              throw new CommandError('User must be the bot owner.')
             }
           } else {
             return
           }
         } else {
           if (guildAccess >= CommandGuildAccess.BotOwner) {
-            throw new Error('Cannot fetch discord application.')
+            throw new CommandError('Cannot fetch discord application.')
           }
         }
       }
@@ -439,7 +452,7 @@ export class CommandRunner extends BaseClass {
       if (guildAccess <= CommandGuildAccess.GuildOwner) {
         if (guild.ownerId !== member.id) {
           if (guildAccess >= CommandGuildAccess.GuildOwner) {
-            throw new Error('User must be the guild owner.')
+            throw new CommandError('User must be the guild owner.')
           }
         } else {
           return
@@ -449,7 +462,7 @@ export class CommandRunner extends BaseClass {
       if (guildAccess <= CommandGuildAccess.Administrator) {
         if (!member.permissions.has('ADMINISTRATOR')) {
           if (guildAccess >= CommandGuildAccess.Administrator) {
-            throw new Error('User must be an administrator.')
+            throw new CommandError('User must be an administrator.')
           }
         } else {
           return
@@ -459,7 +472,7 @@ export class CommandRunner extends BaseClass {
       if (guildAccess <= CommandGuildAccess.WithHigherRole) {
         if (member.roles.highest.position < meMember.roles.highest.position) {
           if (guildAccess >= CommandGuildAccess.WithHigherRole) {
-            throw new Error('User must have at list one role that is higher than the bot role.')
+            throw new CommandError('User must have at list one role that is higher than the bot role.')
           }
         } else {
           return
@@ -469,13 +482,13 @@ export class CommandRunner extends BaseClass {
       if (guildAccess <= CommandGuildAccess.WithRole) {
         if (member.roles.highest.id === guild.id) {
           if (guildAccess >= CommandGuildAccess.WithRole) {
-            throw new Error('User must have at least one role.')
+            throw new CommandError('User must have at least one role.')
           }
         }
       }
     } else {
       if (!await module.commands.isDirectEnabled(command.data.name)) {
-        throw new Error('Command is disabled on direct.')
+        throw new CommandError('Command is disabled on direct.')
       }
 
       const directAccess = await module.commands.getDirectAccess(command.data.name)
@@ -483,18 +496,18 @@ export class CommandRunner extends BaseClass {
         if (application.owner instanceof Discord.Team) {
           if (!application.owner.members.find((teamMember) => teamMember.id === user.id)) {
             if (directAccess >= CommandDirectAccess.BotOwner) {
-              throw new Error('User must be one of the bot owners.')
+              throw new CommandError('User must be one of the bot owners.')
             }
           }
         } else if (application.owner instanceof Discord.User) {
           if (application.owner.id !== user.id) {
             if (directAccess >= CommandDirectAccess.BotOwner) {
-              throw new Error('User must be the bot owner.')
+              throw new CommandError('User must be the bot owner.')
             }
           }
         } else {
           if (directAccess >= CommandDirectAccess.BotOwner) {
-            throw new Error('Cannot fetch discord application.')
+            throw new CommandError('Cannot fetch discord application.')
           }
         }
       }
@@ -545,7 +558,7 @@ export class CommandRunner extends BaseClass {
           ephemeral: true,
           embeds: [
             {
-              title: 'Fatal Error',
+              title: `Fatal: ${error.name}`,
               description: [
                 error.message,
                 '```plain',

@@ -55,6 +55,9 @@ export declare class CommandManager extends BaseArrayManager<Command> {
 }
 export declare const getCommandOptionFootprint: (data: Discord.ApplicationCommandOption | Discord.ApplicationCommandOptionData, footprint?: string) => string;
 export declare const getCommandFootprint: (data: Discord.ApplicationCommand | Command['data'], footprint?: string) => string;
+export declare class CommandError extends Error {
+    constructor(message: Error | string);
+}
 export declare class CommandRunner extends BaseClass {
     constructor(moduleManager: ModuleManager);
     readonly logger: ScopedLogger;
