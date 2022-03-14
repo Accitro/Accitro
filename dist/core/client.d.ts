@@ -18,4 +18,6 @@ export declare class Client {
     readonly logger: ScopedLogger;
     readonly modules: ModuleManager;
     readonly config: GlobalConfigManager;
+    private _application?;
+    getApplication(): Promise<Discord.ClientApplication | null>;
 }

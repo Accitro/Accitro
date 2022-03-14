@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getCommandFootprint = exports.getCommandOptionFootprint = exports.CommandManager = exports.CommandDirectAccess = exports.CommandGuildAccess = void 0;
+exports.CommandRunner = exports.getCommandFootprint = exports.getCommandOptionFootprint = exports.CommandManager = exports.CommandDirectAccess = exports.CommandGuildAccess = void 0;
+const tslib_1 = require("tslib");
+const discord_js_1 = tslib_1.__importDefault(require("discord.js"));
 const base_1 = require("./base");
 var CommandGuildAccess;
 (function (CommandGuildAccess) {
@@ -237,3 +239,250 @@ const getCommandFootprint = (data, footprint = '') => {
     return footprint;
 };
 exports.getCommandFootprint = getCommandFootprint;
+class CommandRunner extends base_1.BaseClass {
+    constructor(moduleManager) {
+        super(moduleManager.client);
+        this.logger = moduleManager.logger.newScope('CommandRunner');
+        this.moduleManager = moduleManager;
+        this.timeouts = {};
+        this.commandList = {};
+    }
+    logger;
+    moduleManager;
+    timeouts;
+    commandList;
+    getTimeout(userId) {
+        return this.timeouts[userId] || 0;
+    }
+    setTimeout(userId, time) {
+        this.timeouts[userId] = time;
+    }
+    async publishCommands(entryList, application) {
+        const { logger } = this;
+        const commandMap = {};
+        for (const entryKey in entryList) {
+            const { command, module } = entryList[entryKey];
+            if (!(command.data.name in commandMap)) {
+                commandMap[command.data.name] = {};
+            }
+            commandMap[command.data.name].local = { command, module };
+        }
+        for (const [, command] of await application.commands.fetch()) {
+            if (!(command.name in commandMap)) {
+                commandMap[command.name] = {};
+            }
+            if (command.type === 'CHAT_INPUT') {
+                commandMap[command.name].remote = command;
+            }
+        }
+        for (const mapKey in commandMap) {
+            const { local, remote } = commandMap[mapKey];
+            if (local && (!remote)) {
+                await application.commands.create(local.command.data);
+                logger.log(`Set chat input interaction command "${local.command.data.name}" to Discord.`);
+            }
+            else if (remote && (!local)) {
+                await application.commands.delete(remote.id);
+                logger.log(`Delete chat input interaction command "${remote.name}" from Discord.`);
+            }
+            else if (remote && local) {
+                const remoteFootprint = (0, exports.getCommandFootprint)(remote);
+                const localFootprint = (0, exports.getCommandFootprint)(local.command.data);
+                if (remoteFootprint !== localFootprint) {
+                    await application.commands.edit(remote.id, local.command.data);
+                    logger.log(`Update chat input interaction command "${remote.name}" on Discord.`);
+                }
+            }
+        }
+    }
+    async init() {
+        const { commandList, client } = this;
+        const application = await this.client.getApplication();
+        if (!application) {
+            throw new Error('Discord application not available');
+        }
+        await Promise.all(this.moduleManager.entries.map(async (module) => {
+            const { commands } = module;
+            await Promise.all(commands.entries.map(async (command) => {
+                if (command.data.name in commandList) {
+                    throw new Error(`Command name ambiguity detected: ${command.data.name}`);
+                }
+                commandList[command.data.name] = { module, command };
+            }));
+        }));
+        await this.publishCommands(commandList, application);
+        client.on('interaction', (interaction) => this.run(interaction));
+    }
+    async checkPerms(interaction, application, command, module, user) {
+        const { client } = this;
+        const { guildId } = interaction;
+        if (guildId) {
+            if (!await module.commands.isGuildEnabled(command.data.name, guildId)) {
+                throw new Error('Command is disabled on guilds.');
+            }
+            const guild = client.discordClient.guilds.cache.get(guildId);
+            if (!guild) {
+                throw new Error('Cannot fetch guild.');
+            }
+            const member = guild.members.cache.get(user.id);
+            if (!member) {
+                throw new Error('Cannot fetch member.');
+            }
+            const meMember = guild.me;
+            if (!meMember) {
+                throw new Error('Cannot fetch bot member.');
+            }
+            const guildAccess = await module.commands.getGuildAccess(command.data.name, guildId);
+            if (guildAccess <= CommandGuildAccess.BotOwner) {
+                if (application.owner instanceof discord_js_1.default.Team) {
+                    if (!application.owner.members.find((teamMember) => teamMember.id === member.id)) {
+                        if (guildAccess === CommandGuildAccess.BotOwner) {
+                            throw new Error('User must be one of the bot owners.');
+                        }
+                    }
+                    else {
+                        return;
+                    }
+                }
+                else if (application.owner instanceof discord_js_1.default.User) {
+                    if (application.owner.id !== member.id) {
+                        if (guildAccess === CommandGuildAccess.BotOwner) {
+                            throw new Error('User must be the bot owner.');
+                        }
+                    }
+                    else {
+                        return;
+                    }
+                }
+                else {
+                    if (guildAccess >= CommandGuildAccess.BotOwner) {
+                        throw new Error('Cannot fetch discord application.');
+                    }
+                }
+            }
+            if (guildAccess <= CommandGuildAccess.GuildOwner) {
+                if (guild.ownerId !== member.id) {
+                    if (guildAccess >= CommandGuildAccess.GuildOwner) {
+                        throw new Error('User must be the guild owner.');
+                    }
+                }
+                else {
+                    return;
+                }
+            }
+            if (guildAccess <= CommandGuildAccess.Administrator) {
+                if (!member.permissions.has('ADMINISTRATOR')) {
+                    if (guildAccess >= CommandGuildAccess.Administrator) {
+                        throw new Error('User must be an administrator.');
+                    }
+                }
+                else {
+                    return;
+                }
+            }
+            if (guildAccess <= CommandGuildAccess.WithHigherRole) {
+                if (member.roles.highest.position < meMember.roles.highest.position) {
+                    if (guildAccess >= CommandGuildAccess.WithHigherRole) {
+                        throw new Error('User must have at list one role that is higher than the bot role.');
+                    }
+                }
+                else {
+                    return;
+                }
+            }
+            if (guildAccess <= CommandGuildAccess.WithRole) {
+                if (member.roles.highest.id === guild.id) {
+                    if (guildAccess >= CommandGuildAccess.WithRole) {
+                        throw new Error('User must have at least one role.');
+                    }
+                }
+            }
+        }
+        else {
+            if (!await module.commands.isDirectEnabled(command.data.name)) {
+                throw new Error('Command is disabled on direct.');
+            }
+            const directAccess = await module.commands.getDirectAccess(command.data.name);
+            if (directAccess <= CommandDirectAccess.BotOwner) {
+                if (application.owner instanceof discord_js_1.default.Team) {
+                    if (!application.owner.members.find((teamMember) => teamMember.id === user.id)) {
+                        if (directAccess >= CommandDirectAccess.BotOwner) {
+                            throw new Error('User must be one of the bot owners.');
+                        }
+                    }
+                }
+                else if (application.owner instanceof discord_js_1.default.User) {
+                    if (application.owner.id !== user.id) {
+                        if (directAccess >= CommandDirectAccess.BotOwner) {
+                            throw new Error('User must be the bot owner.');
+                        }
+                    }
+                }
+                else {
+                    if (directAccess >= CommandDirectAccess.BotOwner) {
+                        throw new Error('Cannot fetch discord application.');
+                    }
+                }
+            }
+        }
+    }
+    async run(interaction) {
+        const { commandList, client } = this;
+        const application = await client.getApplication();
+        if (!application) {
+            throw new Error('Discord application not available');
+        }
+        else if (!interaction.isCommand()) {
+            return;
+        }
+        const respond = (data) => {
+            if (interaction.replied || interaction.deferred) {
+                return interaction.editReply(data);
+            }
+            else {
+                return interaction.reply(data);
+            }
+        };
+        const run = async () => {
+            const guildId = interaction.guildId || undefined;
+            const { command, module } = commandList[interaction.commandName] || {};
+            const user = interaction.user;
+            const me = client.discordClient.user;
+            if (!(command && module)) {
+                throw new Error('Cannot fetch command.');
+            }
+            else if (!await module.isEnabled(guildId)) {
+                throw new Error('Module is disabled.');
+            }
+            else if (!me) {
+                throw new Error('Cannot fetch bot user.');
+            }
+            await this.checkPerms(interaction, application, command, module, user);
+            return await command.run(module.commands.logger.newScope(`Module: ${module.name} / Command: ${command.data.name}`), interaction);
+        };
+        const result = await (async () => {
+            try {
+                return await run();
+            }
+            catch (error) {
+                this.logger.error(error);
+                return {
+                    ephemeral: true,
+                    embeds: [
+                        {
+                            title: 'Fatal Error',
+                            description: [
+                                error.message,
+                                '```plain',
+                                ...error.stack.split('\n').slice(1),
+                                '```'
+                            ].join('\n')
+                        }
+                    ]
+                };
+            }
+        })();
+        result && await respond(result).catch((error) => this.logger.error(error));
+    }
+}
+exports.CommandRunner = CommandRunner;

@@ -33,4 +33,13 @@ export class Client {
   public readonly logger: ScopedLogger
   public readonly modules: ModuleManager
   public readonly config: GlobalConfigManager
+
+  private _application?: Discord.ClientApplication | null
+  public async getApplication () {
+    if (this._application === undefined) {
+      this._application = await this.discordClient.application?.fetch() || null
+    }
+
+    return this._application
+  }
 }

@@ -1,6 +1,6 @@
 import Discord from 'discord.js';
-import { Module } from './module';
-import { BaseArrayManager } from './base';
+import { Module, ModuleManager } from './module';
+import { BaseArrayManager, BaseClass } from './base';
 import { ScopedLogger } from './logger';
 export interface Command {
     data: Discord.ChatInputApplicationCommandData;
@@ -55,3 +55,28 @@ export declare class CommandManager extends BaseArrayManager<Command> {
 }
 export declare const getCommandOptionFootprint: (data: Discord.ApplicationCommandOption | Discord.ApplicationCommandOptionData, footprint?: string) => string;
 export declare const getCommandFootprint: (data: Discord.ApplicationCommand | Command['data'], footprint?: string) => string;
+export declare class CommandRunner extends BaseClass {
+    constructor(moduleManager: ModuleManager);
+    readonly logger: ScopedLogger;
+    readonly moduleManager: ModuleManager;
+    readonly timeouts: {
+        [key: string]: number;
+    };
+    readonly commandList: {
+        [key: string]: {
+            module: Module;
+            command: Command;
+        };
+    };
+    getTimeout(userId: string): number;
+    setTimeout(userId: string, time: number): void;
+    publishCommands(entryList: {
+        [key: string]: {
+            module: Module;
+            command: Command;
+        };
+    }, application: Discord.ClientApplication): Promise<void>;
+    init(): Promise<void>;
+    checkPerms(interaction: Discord.Interaction, application: Discord.ClientApplication, command: Command, module: Module, user: Discord.User): Promise<void>;
+    run(interaction: Discord.Interaction): Promise<void>;
+}

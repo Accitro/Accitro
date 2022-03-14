@@ -1,7 +1,6 @@
-import Discord from 'discord.js';
 import { BaseArrayManager, BaseClass } from './base';
 import { Client } from './client';
-import { Command, CommandManager } from './command';
+import { CommandManager, CommandRunner } from './command';
 import { ClientEvents, EventEmitter } from './events';
 import { ScopedLogger } from './logger';
 export declare abstract class Module extends BaseClass {
@@ -27,16 +26,9 @@ export declare class ModuleManager extends BaseArrayManager<Module> {
     get moduleTable(): import("..").TableQueryBuilder;
     get moduleGuildOverrideTable(): import("..").TableQueryBuilder;
     readonly logger: ScopedLogger;
-    publishCommands(entryList: {
-        [key: string]: {
-            module: Module;
-            command: Command;
-        };
-    }, application: Discord.ClientApplication): Promise<void>;
+    readonly commandRunner: CommandRunner;
     init(): Promise<void>;
     add(...entries: Module[]): void;
-    private _application?;
-    getApplication(): Promise<Discord.ClientApplication | null>;
     enable(name: string): Promise<void>;
     disable(name: string): Promise<void>;
     isEnabled(name: string, guildId?: string): Promise<boolean>;

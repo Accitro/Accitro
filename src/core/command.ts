@@ -1,8 +1,9 @@
 import Discord from 'discord.js'
 import Crypto from 'crypto'
-import { Module } from './module'
-import { BaseArrayManager } from './base'
+import { Module, ModuleManager } from './module'
+import { BaseArrayManager, BaseClass } from './base'
 import { ScopedLogger } from './logger'
+import { Client } from './client'
 
 export interface Command {
   data: Discord.ChatInputApplicationCommandData
@@ -282,4 +283,280 @@ export const getCommandFootprint = (data: Discord.ApplicationCommand | Command['
   }
 
   return footprint
+}
+
+export class CommandRunner extends BaseClass {
+  public constructor (moduleManager: ModuleManager) {
+    super(moduleManager.client)
+
+    this.logger = moduleManager.logger.newScope('CommandRunner')
+    this.moduleManager = moduleManager
+    this.timeouts = {}
+    this.commandList = {}
+  }
+
+  public readonly logger: ScopedLogger
+  public readonly moduleManager: ModuleManager
+  public readonly timeouts: { [key: string]: number }
+  public readonly commandList: {
+    [key: string]: {
+      module: Module,
+      command: Command
+    }
+  }
+
+  public getTimeout (userId: string) {
+    return this.timeouts[userId] || 0
+  }
+
+  public setTimeout (userId: string, time: number) {
+    this.timeouts[userId] = time
+  }
+
+  public async publishCommands (entryList: { [key: string]: { module: Module, command: Command } }, application: Discord.ClientApplication) {
+    const { logger } = this
+
+    const commandMap: {
+      [key: string]: {
+        local?: { module: Module, command: Command }
+        remote?: Discord.ApplicationCommand<{ guild: Discord.GuildResolvable }> & { type: 'CHAT_INPUT' }
+      }
+    } = {}
+
+    for (const entryKey in entryList) {
+      const { command, module } = entryList[entryKey]
+
+      if (!(command.data.name in commandMap)) {
+        commandMap[command.data.name] = {}
+      }
+
+      commandMap[command.data.name].local = { command, module }
+    }
+
+    for (const [, command] of await application.commands.fetch()) {
+      if (!(command.name in commandMap)) {
+        commandMap[command.name] = {}
+      }
+
+      if (command.type === 'CHAT_INPUT') {
+        commandMap[command.name].remote = <any> command
+      }
+    }
+
+    for (const mapKey in commandMap) {
+      const { local, remote } = commandMap[mapKey]
+
+      if (local && (!remote)) {
+        await application.commands.create(local.command.data)
+        logger.log(`Set chat input interaction command "${local.command.data.name}" to Discord.`)
+      } else if (remote && (!local)) {
+        await application.commands.delete(remote.id)
+        logger.log(`Delete chat input interaction command "${remote.name}" from Discord.`)
+      } else if (remote && local) {
+        const remoteFootprint = getCommandFootprint(remote)
+        const localFootprint = getCommandFootprint(local.command.data)
+
+        if (remoteFootprint !== localFootprint) {
+          await application.commands.edit(remote.id, local.command.data)
+          logger.log(`Update chat input interaction command "${remote.name}" on Discord.`)
+        }
+      }
+    }
+  }
+
+  public async init () {
+    const { commandList, client } = this
+    const application = await this.client.getApplication()
+    if (!application) {
+      throw new Error('Discord application not available')
+    }
+
+    await Promise.all(this.moduleManager.entries.map(async (module) => {
+      const { commands } = module
+
+      await Promise.all(commands.entries.map(async (command) => {
+        if (command.data.name in commandList) {
+          throw new Error(`Command name ambiguity detected: ${command.data.name}`)
+        }
+
+        commandList[command.data.name] = { module, command }
+      }))
+    }))
+
+    await this.publishCommands(commandList, application)
+    client.on('interaction', (interaction) => this.run(interaction))
+  }
+
+  public async checkPerms (interaction: Discord.Interaction, application: Discord.ClientApplication, command: Command, module: Module, user: Discord.User) {
+    const { client } = this
+    const { guildId } = interaction
+
+    if (guildId) {
+      if (!await module.commands.isGuildEnabled(command.data.name, guildId)) {
+        throw new Error('Command is disabled on guilds.')
+      }
+
+      const guild = client.discordClient.guilds.cache.get(guildId)
+      if (!guild) {
+        throw new Error('Cannot fetch guild.')
+      }
+
+      const member = guild.members.cache.get(user.id)
+      if (!member) {
+        throw new Error('Cannot fetch member.')
+      }
+
+      const meMember = guild.me
+      if (!meMember) {
+        throw new Error('Cannot fetch bot member.')
+      }
+
+      const guildAccess = await module.commands.getGuildAccess(command.data.name, guildId)
+      if (guildAccess <= CommandGuildAccess.BotOwner) {
+        if (application.owner instanceof Discord.Team) {
+          if (!application.owner.members.find((teamMember) => teamMember.id === member.id)) {
+            if (guildAccess === CommandGuildAccess.BotOwner) {
+              throw new Error('User must be one of the bot owners.')
+            }
+          } else {
+            return
+          }
+        } else if (application.owner instanceof Discord.User) {
+          if (application.owner.id !== member.id) {
+            if (guildAccess === CommandGuildAccess.BotOwner) {
+              throw new Error('User must be the bot owner.')
+            }
+          } else {
+            return
+          }
+        } else {
+          if (guildAccess >= CommandGuildAccess.BotOwner) {
+            throw new Error('Cannot fetch discord application.')
+          }
+        }
+      }
+
+      if (guildAccess <= CommandGuildAccess.GuildOwner) {
+        if (guild.ownerId !== member.id) {
+          if (guildAccess >= CommandGuildAccess.GuildOwner) {
+            throw new Error('User must be the guild owner.')
+          }
+        } else {
+          return
+        }
+      }
+
+      if (guildAccess <= CommandGuildAccess.Administrator) {
+        if (!member.permissions.has('ADMINISTRATOR')) {
+          if (guildAccess >= CommandGuildAccess.Administrator) {
+            throw new Error('User must be an administrator.')
+          }
+        } else {
+          return
+        }
+      }
+
+      if (guildAccess <= CommandGuildAccess.WithHigherRole) {
+        if (member.roles.highest.position < meMember.roles.highest.position) {
+          if (guildAccess >= CommandGuildAccess.WithHigherRole) {
+            throw new Error('User must have at list one role that is higher than the bot role.')
+          }
+        } else {
+          return
+        }
+      }
+
+      if (guildAccess <= CommandGuildAccess.WithRole) {
+        if (member.roles.highest.id === guild.id) {
+          if (guildAccess >= CommandGuildAccess.WithRole) {
+            throw new Error('User must have at least one role.')
+          }
+        }
+      }
+    } else {
+      if (!await module.commands.isDirectEnabled(command.data.name)) {
+        throw new Error('Command is disabled on direct.')
+      }
+
+      const directAccess = await module.commands.getDirectAccess(command.data.name)
+      if (directAccess <= CommandDirectAccess.BotOwner) {
+        if (application.owner instanceof Discord.Team) {
+          if (!application.owner.members.find((teamMember) => teamMember.id === user.id)) {
+            if (directAccess >= CommandDirectAccess.BotOwner) {
+              throw new Error('User must be one of the bot owners.')
+            }
+          }
+        } else if (application.owner instanceof Discord.User) {
+          if (application.owner.id !== user.id) {
+            if (directAccess >= CommandDirectAccess.BotOwner) {
+              throw new Error('User must be the bot owner.')
+            }
+          }
+        } else {
+          if (directAccess >= CommandDirectAccess.BotOwner) {
+            throw new Error('Cannot fetch discord application.')
+          }
+        }
+      }
+    }
+  }
+
+  public async run (interaction: Discord.Interaction) {
+    const { commandList, client } = this
+    const application = await client.getApplication()
+    if (!application) {
+      throw new Error('Discord application not available')
+    } else if (!interaction.isCommand()) {
+      return
+    }
+
+    const respond = (data: Discord.InteractionReplyOptions) => {
+      if (interaction.replied || interaction.deferred) {
+        return interaction.editReply(data)
+      } else {
+        return interaction.reply(data)
+      }
+    }
+
+    const run = async () => {
+      const guildId = interaction.guildId || undefined
+      const { command, module } = commandList[interaction.commandName] || {}
+      const user = interaction.user
+      const me = client.discordClient.user
+
+      if (!(command && module)) {
+        throw new Error('Cannot fetch command.')
+      } else if (!await module.isEnabled(guildId)) {
+        throw new Error('Module is disabled.')
+      } else if (!me) {
+        throw new Error('Cannot fetch bot user.')
+      }
+
+      await this.checkPerms(interaction, application, command, module, user)
+      return await command.run(module.commands.logger.newScope(`Module: ${module.name} / Command: ${command.data.name}`), interaction)
+    }
+
+    const result = await (async () => {
+      try {
+        return await run()
+      } catch (error: any) {
+        this.logger.error(error)
+        return {
+          ephemeral: true,
+          embeds: [
+            {
+              title: 'Fatal Error',
+              description: [
+                error.message,
+                '```plain',
+                ...error.stack.split('\n').slice(1),
+                '```'
+              ].join('\n')
+            }
+          ]
+        }
+      }
+    })()
+    result && await respond(<any> result).catch((error) => this.logger.error(error))
+  }
 }

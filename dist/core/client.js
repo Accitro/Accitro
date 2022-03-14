@@ -28,5 +28,12 @@ class Client {
     logger;
     modules;
     config;
+    _application;
+    async getApplication() {
+        if (this._application === undefined) {
+            this._application = await this.discordClient.application?.fetch() || null;
+        }
+        return this._application;
+    }
 }
 exports.Client = Client;
