@@ -87,7 +87,7 @@ class CommandManager extends base_1.BaseArrayManager {
             throw new Error(`Command missing: ${name}`);
         }
         else if (!command.defaultAccess.guildSupport) {
-            throw new Error(`Command "${name}" does not work on guild.`);
+            throw new Error(`Command "${name}" does not work in guilds.`);
         }
         await this.commandGuildAccessTable.drop({ name, guildId });
     }
@@ -97,7 +97,7 @@ class CommandManager extends base_1.BaseArrayManager {
             throw new Error(`Command missing: ${name}`);
         }
         else if (!command.defaultAccess.directSupport) {
-            throw new Error(`Command "${name}" does not work on direct.`);
+            throw new Error(`Command "${name}" does not work in dms.`);
         }
         const { commandDirectAccessTable } = this;
         if (await commandDirectAccessTable.has({ name })) {
@@ -240,12 +240,12 @@ const getCommandFootprint = (data, footprint = '') => {
 };
 exports.getCommandFootprint = getCommandFootprint;
 class CommandError extends Error {
-    constructor(message) {
+    constructor(message, type) {
         const { errorMessage, errorStack } = message instanceof Error
             ? { errorMessage: message.message, errorStack: message.stack }
             : { errorMessage: message, errorStack: undefined };
         super(errorMessage);
-        this.name = 'Command Error';
+        this.name = `${type} Error`;
         this.stack = errorStack || this.stack;
     }
 }
@@ -324,31 +324,31 @@ class CommandRunner extends base_1.BaseClass {
         await this.publishCommands(commandList, application);
         client.on('interaction', (interaction) => this.run(interaction));
     }
-    async checkPerms(interaction, application, command, module, user) {
+    async checkPermissions(interaction, application, command, module, user) {
         const { client } = this;
         const { guildId } = interaction;
         if (guildId) {
             if (!await module.commands.isGuildEnabled(command.data.name, guildId)) {
-                throw new CommandError('Command is disabled on guilds.');
+                throw new CommandError('Command is disabled in guilds.', 'Permission');
             }
             const guild = client.discordClient.guilds.cache.get(guildId);
             if (!guild) {
-                throw new CommandError('Cannot fetch guild.');
+                throw new CommandError('Cannot fetch guild.', 'Permission');
             }
             const member = guild.members.cache.get(user.id);
             if (!member) {
-                throw new CommandError('Cannot fetch member.');
+                throw new CommandError('Cannot fetch member.', 'Internal');
             }
             const meMember = guild.me;
             if (!meMember) {
-                throw new CommandError('Cannot fetch bot member.');
+                throw new CommandError('Cannot fetch bot member.', 'Internal');
             }
             const guildAccess = await module.commands.getGuildAccess(command.data.name, guildId);
             if (guildAccess <= CommandGuildAccess.BotOwner) {
                 if (application.owner instanceof discord_js_1.default.Team) {
                     if (!application.owner.members.find((teamMember) => teamMember.id === member.id)) {
                         if (guildAccess === CommandGuildAccess.BotOwner) {
-                            throw new CommandError('User must be one of the bot owners.');
+                            throw new CommandError('User must be one of the bot owners.', 'Permission');
                         }
                     }
                     else {
@@ -358,7 +358,7 @@ class CommandRunner extends base_1.BaseClass {
                 else if (application.owner instanceof discord_js_1.default.User) {
                     if (application.owner.id !== member.id) {
                         if (guildAccess === CommandGuildAccess.BotOwner) {
-                            throw new CommandError('User must be the bot owner.');
+                            throw new CommandError('User must be the bot owner.', 'Permission');
                         }
                     }
                     else {
@@ -367,14 +367,14 @@ class CommandRunner extends base_1.BaseClass {
                 }
                 else {
                     if (guildAccess >= CommandGuildAccess.BotOwner) {
-                        throw new CommandError('Cannot fetch discord application.');
+                        throw new CommandError('Cannot fetch discord application.', 'Internal');
                     }
                 }
             }
             if (guildAccess <= CommandGuildAccess.GuildOwner) {
                 if (guild.ownerId !== member.id) {
                     if (guildAccess >= CommandGuildAccess.GuildOwner) {
-                        throw new CommandError('User must be the guild owner.');
+                        throw new CommandError('User must be the guild owner.', 'Permission');
                     }
                 }
                 else {
@@ -384,7 +384,7 @@ class CommandRunner extends base_1.BaseClass {
             if (guildAccess <= CommandGuildAccess.Administrator) {
                 if (!member.permissions.has('ADMINISTRATOR')) {
                     if (guildAccess >= CommandGuildAccess.Administrator) {
-                        throw new CommandError('User must be an administrator.');
+                        throw new CommandError('User must be an administrator.', 'Permission');
                     }
                 }
                 else {
@@ -394,7 +394,7 @@ class CommandRunner extends base_1.BaseClass {
             if (guildAccess <= CommandGuildAccess.WithHigherRole) {
                 if (member.roles.highest.position < meMember.roles.highest.position) {
                     if (guildAccess >= CommandGuildAccess.WithHigherRole) {
-                        throw new CommandError('User must have at least one role that is higher than the bot role.');
+                        throw new CommandError('User must have at least one role that is higher than the bot role.', 'Permission');
                     }
                 }
                 else {
@@ -404,34 +404,34 @@ class CommandRunner extends base_1.BaseClass {
             if (guildAccess <= CommandGuildAccess.WithRole) {
                 if (member.roles.highest.id === guild.id) {
                     if (guildAccess >= CommandGuildAccess.WithRole) {
-                        throw new CommandError('User must have at least one role.');
+                        throw new CommandError('User must have at least one role.', 'Permission');
                     }
                 }
             }
         }
         else {
             if (!await module.commands.isDirectEnabled(command.data.name)) {
-                throw new CommandError('Command is disabled on direct.');
+                throw new CommandError('Command is disabled in dms.', 'Permission');
             }
             const directAccess = await module.commands.getDirectAccess(command.data.name);
             if (directAccess <= CommandDirectAccess.BotOwner) {
                 if (application.owner instanceof discord_js_1.default.Team) {
                     if (!application.owner.members.find((teamMember) => teamMember.id === user.id)) {
                         if (directAccess >= CommandDirectAccess.BotOwner) {
-                            throw new CommandError('User must be one of the bot owners.');
+                            throw new CommandError('User must be one of the bot owners.', 'Permission');
                         }
                     }
                 }
                 else if (application.owner instanceof discord_js_1.default.User) {
                     if (application.owner.id !== user.id) {
                         if (directAccess >= CommandDirectAccess.BotOwner) {
-                            throw new CommandError('User must be the bot owner.');
+                            throw new CommandError('User must be the bot owner.', 'Permission');
                         }
                     }
                 }
                 else {
                     if (directAccess >= CommandDirectAccess.BotOwner) {
-                        throw new CommandError('Cannot fetch discord application.');
+                        throw new CommandError('Cannot fetch discord application.', 'Internal');
                     }
                 }
             }
@@ -461,16 +461,33 @@ class CommandRunner extends base_1.BaseClass {
             const me = client.discordClient.user;
             logger.log(`User ${user.id} invoked /${command.data.name} command.`);
             if (!(command && module)) {
-                throw new Error('Cannot fetch command.');
+                throw new CommandError('Cannot fetch command.', 'Internal');
             }
             else if (!await module.isEnabled(guildId)) {
-                throw new Error('Module is disabled.');
+                throw new CommandError('Module is disabled.', 'Permission');
             }
             else if (!me) {
-                throw new Error('Cannot fetch bot user.');
+                throw new CommandError('Cannot fetch bot user.', 'Internal');
             }
             try {
-                await this.checkPerms(interaction, application, command, module, user);
+                const { defaultAccess } = command;
+                if (interaction.guildId) {
+                    if (!defaultAccess.guildSupport) {
+                        throw new CommandError('This command does not work in guilds.', 'Permission');
+                    }
+                }
+                else {
+                    if (!defaultAccess.directSupport) {
+                        throw new CommandError('This command does not work in dms.', 'Permission');
+                    }
+                }
+            }
+            catch (error) {
+                logger.log(`User ${user.id} tried to invoke /${command.data.name} in ${interaction.guildId ? 'a guild' : 'dms'} where it doesn't work.`);
+                throw error;
+            }
+            try {
+                await this.checkPermissions(interaction, application, command, module, user);
             }
             catch (error) {
                 logger.log(`User ${user.id} did not have enough permission to run /${command.data.name} command.`);

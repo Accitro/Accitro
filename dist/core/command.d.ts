@@ -56,7 +56,7 @@ export declare class CommandManager extends BaseArrayManager<Command> {
 export declare const getCommandOptionFootprint: (data: Discord.ApplicationCommandOption | Discord.ApplicationCommandOptionData, footprint?: string) => string;
 export declare const getCommandFootprint: (data: Discord.ApplicationCommand | Command['data'], footprint?: string) => string;
 export declare class CommandError extends Error {
-    constructor(message: Error | string);
+    constructor(message: Error | string, type: 'Permission' | 'Input' | 'Internal');
 }
 export declare class CommandRunner extends BaseClass {
     constructor(moduleManager: ModuleManager);
@@ -80,6 +80,6 @@ export declare class CommandRunner extends BaseClass {
         };
     }, application: Discord.ClientApplication): Promise<void>;
     init(): Promise<void>;
-    checkPerms(interaction: Discord.Interaction, application: Discord.ClientApplication, command: Command, module: Module, user: Discord.User): Promise<void>;
+    checkPermissions(interaction: Discord.Interaction, application: Discord.ClientApplication, command: Command, module: Module, user: Discord.User): Promise<void>;
     run(interaction: Discord.Interaction): Promise<void>;
 }

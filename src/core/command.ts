@@ -123,7 +123,7 @@ export class CommandManager extends BaseArrayManager<Command> {
     if (!command) {
       throw new Error(`Command missing: ${name}`)
     } else if (!command.defaultAccess.guildSupport) {
-      throw new Error(`Command "${name}" does not work on guild.`)
+      throw new Error(`Command "${name}" does not work in guilds.`)
     }
 
     await this.commandGuildAccessTable.drop({ name, guildId })
@@ -134,7 +134,7 @@ export class CommandManager extends BaseArrayManager<Command> {
     if (!command) {
       throw new Error(`Command missing: ${name}`)
     } else if (!command.defaultAccess.directSupport) {
-      throw new Error(`Command "${name}" does not work on direct.`)
+      throw new Error(`Command "${name}" does not work in dms.`)
     }
 
     const { commandDirectAccessTable } = this
@@ -286,14 +286,14 @@ export const getCommandFootprint = (data: Discord.ApplicationCommand | Command['
 }
 
 export class CommandError extends Error {
-  public constructor (message: Error | string) {
+  public constructor (message: Error | string, type: 'Permission' | 'Input' | 'Internal') {
     const { errorMessage, errorStack } = message instanceof Error
       ? { errorMessage: message.message, errorStack: message.stack }
       : { errorMessage: message, errorStack: undefined }
 
     super(errorMessage)
 
-    this.name = 'Command Error'
+    this.name = `${type} Error`
     this.stack = errorStack || this.stack
   }
 }
@@ -400,28 +400,28 @@ export class CommandRunner extends BaseClass {
     client.on('interaction', (interaction) => this.run(interaction))
   }
 
-  public async checkPerms (interaction: Discord.Interaction, application: Discord.ClientApplication, command: Command, module: Module, user: Discord.User) {
+  public async checkPermissions (interaction: Discord.Interaction, application: Discord.ClientApplication, command: Command, module: Module, user: Discord.User) {
     const { client } = this
     const { guildId } = interaction
 
     if (guildId) {
       if (!await module.commands.isGuildEnabled(command.data.name, guildId)) {
-        throw new CommandError('Command is disabled on guilds.')
+        throw new CommandError('Command is disabled in guilds.', 'Permission')
       }
 
       const guild = client.discordClient.guilds.cache.get(guildId)
       if (!guild) {
-        throw new CommandError('Cannot fetch guild.')
+        throw new CommandError('Cannot fetch guild.', 'Permission')
       }
 
       const member = guild.members.cache.get(user.id)
       if (!member) {
-        throw new CommandError('Cannot fetch member.')
+        throw new CommandError('Cannot fetch member.', 'Internal')
       }
 
       const meMember = guild.me
       if (!meMember) {
-        throw new CommandError('Cannot fetch bot member.')
+        throw new CommandError('Cannot fetch bot member.', 'Internal')
       }
 
       const guildAccess = await module.commands.getGuildAccess(command.data.name, guildId)
@@ -429,7 +429,7 @@ export class CommandRunner extends BaseClass {
         if (application.owner instanceof Discord.Team) {
           if (!application.owner.members.find((teamMember) => teamMember.id === member.id)) {
             if (guildAccess === CommandGuildAccess.BotOwner) {
-              throw new CommandError('User must be one of the bot owners.')
+              throw new CommandError('User must be one of the bot owners.', 'Permission')
             }
           } else {
             return
@@ -437,14 +437,14 @@ export class CommandRunner extends BaseClass {
         } else if (application.owner instanceof Discord.User) {
           if (application.owner.id !== member.id) {
             if (guildAccess === CommandGuildAccess.BotOwner) {
-              throw new CommandError('User must be the bot owner.')
+              throw new CommandError('User must be the bot owner.', 'Permission')
             }
           } else {
             return
           }
         } else {
           if (guildAccess >= CommandGuildAccess.BotOwner) {
-            throw new CommandError('Cannot fetch discord application.')
+            throw new CommandError('Cannot fetch discord application.', 'Internal')
           }
         }
       }
@@ -452,7 +452,7 @@ export class CommandRunner extends BaseClass {
       if (guildAccess <= CommandGuildAccess.GuildOwner) {
         if (guild.ownerId !== member.id) {
           if (guildAccess >= CommandGuildAccess.GuildOwner) {
-            throw new CommandError('User must be the guild owner.')
+            throw new CommandError('User must be the guild owner.', 'Permission')
           }
         } else {
           return
@@ -462,7 +462,7 @@ export class CommandRunner extends BaseClass {
       if (guildAccess <= CommandGuildAccess.Administrator) {
         if (!member.permissions.has('ADMINISTRATOR')) {
           if (guildAccess >= CommandGuildAccess.Administrator) {
-            throw new CommandError('User must be an administrator.')
+            throw new CommandError('User must be an administrator.', 'Permission')
           }
         } else {
           return
@@ -472,7 +472,7 @@ export class CommandRunner extends BaseClass {
       if (guildAccess <= CommandGuildAccess.WithHigherRole) {
         if (member.roles.highest.position < meMember.roles.highest.position) {
           if (guildAccess >= CommandGuildAccess.WithHigherRole) {
-            throw new CommandError('User must have at least one role that is higher than the bot role.')
+            throw new CommandError('User must have at least one role that is higher than the bot role.', 'Permission')
           }
         } else {
           return
@@ -482,13 +482,13 @@ export class CommandRunner extends BaseClass {
       if (guildAccess <= CommandGuildAccess.WithRole) {
         if (member.roles.highest.id === guild.id) {
           if (guildAccess >= CommandGuildAccess.WithRole) {
-            throw new CommandError('User must have at least one role.')
+            throw new CommandError('User must have at least one role.', 'Permission')
           }
         }
       }
     } else {
       if (!await module.commands.isDirectEnabled(command.data.name)) {
-        throw new CommandError('Command is disabled on direct.')
+        throw new CommandError('Command is disabled in dms.', 'Permission')
       }
 
       const directAccess = await module.commands.getDirectAccess(command.data.name)
@@ -496,18 +496,18 @@ export class CommandRunner extends BaseClass {
         if (application.owner instanceof Discord.Team) {
           if (!application.owner.members.find((teamMember) => teamMember.id === user.id)) {
             if (directAccess >= CommandDirectAccess.BotOwner) {
-              throw new CommandError('User must be one of the bot owners.')
+              throw new CommandError('User must be one of the bot owners.', 'Permission')
             }
           }
         } else if (application.owner instanceof Discord.User) {
           if (application.owner.id !== user.id) {
             if (directAccess >= CommandDirectAccess.BotOwner) {
-              throw new CommandError('User must be the bot owner.')
+              throw new CommandError('User must be the bot owner.', 'Permission')
             }
           }
         } else {
           if (directAccess >= CommandDirectAccess.BotOwner) {
-            throw new CommandError('Cannot fetch discord application.')
+            throw new CommandError('Cannot fetch discord application.', 'Internal')
           }
         }
       }
@@ -539,15 +539,32 @@ export class CommandRunner extends BaseClass {
 
       logger.log(`User ${user.id} invoked /${command.data.name} command.`)
       if (!(command && module)) {
-        throw new Error('Cannot fetch command.')
+        throw new CommandError('Cannot fetch command.', 'Internal')
       } else if (!await module.isEnabled(guildId)) {
-        throw new Error('Module is disabled.')
+        throw new CommandError('Module is disabled.', 'Permission')
       } else if (!me) {
-        throw new Error('Cannot fetch bot user.')
+        throw new CommandError('Cannot fetch bot user.', 'Internal')
       }
 
       try {
-        await this.checkPerms(interaction, application, command, module, user)
+        const { defaultAccess } = command
+
+        if (interaction.guildId) {
+          if (!defaultAccess.guildSupport) {
+            throw new CommandError('This command does not work in guilds.', 'Permission')
+          }
+        } else {
+          if (!defaultAccess.directSupport) {
+            throw new CommandError('This command does not work in dms.', 'Permission')
+          }
+        }
+      } catch (error) {
+        logger.log(`User ${user.id} tried to invoke /${command.data.name} in ${interaction.guildId ? 'a guild' : 'dms'} where it doesn't work.`)
+        throw error
+      }
+
+      try {
+        await this.checkPermissions(interaction, application, command, module, user)
       } catch (error) {
         logger.log(`User ${user.id} did not have enough permission to run /${command.data.name} command.`)
         throw error
