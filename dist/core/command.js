@@ -438,7 +438,7 @@ class CommandRunner extends base_1.BaseClass {
         }
     }
     async run(interaction) {
-        const { commandList, client } = this;
+        const { commandList, client, logger } = this;
         const application = await client.getApplication();
         if (!application) {
             throw new Error('Discord application not available');
@@ -459,6 +459,7 @@ class CommandRunner extends base_1.BaseClass {
             const { command, module } = commandList[interaction.commandName] || {};
             const user = interaction.user;
             const me = client.discordClient.user;
+            logger.log(`User ${user.id} invoked /${command.data.name} command.`);
             if (!(command && module)) {
                 throw new Error('Cannot fetch command.');
             }
@@ -468,8 +469,20 @@ class CommandRunner extends base_1.BaseClass {
             else if (!me) {
                 throw new Error('Cannot fetch bot user.');
             }
-            await this.checkPerms(interaction, application, command, module, user);
-            return await command.run(module.commands.logger.newScope(`Module: ${module.name} / Command: ${command.data.name}`), interaction);
+            try {
+                await this.checkPerms(interaction, application, command, module, user);
+            }
+            catch (error) {
+                logger.log(`User ${user.id} did not have enough permission to run /${command.data.name} command.`);
+                throw error;
+            }
+            try {
+                return await command.run(module.commands.logger.newScope(`Module: ${module.name} / Command: ${command.data.name}`), interaction);
+            }
+            catch (error) {
+                logger.log(`An error occured when user ${user.id} invoked /${command.data.name} command.`);
+                throw error;
+            }
         };
         const result = await (async () => {
             try {
