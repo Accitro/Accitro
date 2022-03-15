@@ -581,7 +581,12 @@ export class CommandRunner extends BaseClass {
     const result = await (async () => {
       try {
         return await run()
-      } catch (error: any) {
+      } catch (originalError: any) {
+        let error = originalError
+        if (!(error instanceof CommandError)) {
+          error = new CommandError(error, 'Internal')
+        }
+
         this.logger.error(error)
         return {
           ephemeral: true,

@@ -507,7 +507,11 @@ class CommandRunner extends base_1.BaseClass {
             try {
                 return await run();
             }
-            catch (error) {
+            catch (originalError) {
+                let error = originalError;
+                if (!(error instanceof CommandError)) {
+                    error = new CommandError(error, 'Internal');
+                }
                 this.logger.error(error);
                 return {
                     ephemeral: true,
