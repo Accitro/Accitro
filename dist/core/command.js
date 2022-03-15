@@ -509,7 +509,7 @@ class CommandRunner extends base_1.BaseClass {
             }
             catch (originalError) {
                 let error = originalError;
-                if (!(error instanceof CommandError)) {
+                if (error.name.startsWith('Error')) {
                     error = new CommandError(error, 'Internal');
                 }
                 this.logger.error(error);

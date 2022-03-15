@@ -583,7 +583,7 @@ export class CommandRunner extends BaseClass {
         return await run()
       } catch (originalError: any) {
         let error = originalError
-        if (!(error instanceof CommandError)) {
+        if (error.name.startsWith('Error')) {
           error = new CommandError(error, 'Internal')
         }
 
