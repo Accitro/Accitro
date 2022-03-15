@@ -226,7 +226,8 @@ const getCommandOptionFootprint = (data, footprint = '') => {
     footprint += data.name;
     footprint += data.description;
     footprint += data.type;
-    footprint += (data.required || false);
+    footprint += data.required || false;
+    footprint += data.choices || [];
     return footprint;
 };
 exports.getCommandOptionFootprint = getCommandOptionFootprint;
