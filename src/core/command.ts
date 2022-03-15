@@ -268,7 +268,7 @@ export const getCommandOptionFootprint = (data: Discord.ApplicationCommandOption
   footprint += data.description
   footprint += data.type
   footprint += (<any> data).required || false
-  footprint += (<any> data).choices || []
+  footprint += (<Array<any>> (<any> data).choices || []).map(({ name, value }) => `${name}=${value}`).join()
 
   return footprint
 }
