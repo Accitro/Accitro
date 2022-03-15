@@ -604,6 +604,11 @@ export class CommandRunner extends BaseClass {
         }
       }
     })()
-    result && await respond(<any> result).catch((error) => this.logger.error(error))
+
+    if (result) {
+      await respond(<any> result).catch((error) => this.logger.error(error))
+    } else if (interaction.deferred) {
+      await interaction.deleteReply()
+    }
   }
 }

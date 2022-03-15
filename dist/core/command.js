@@ -529,7 +529,12 @@ class CommandRunner extends base_1.BaseClass {
                 };
             }
         })();
-        result && await respond(result).catch((error) => this.logger.error(error));
+        if (result) {
+            await respond(result).catch((error) => this.logger.error(error));
+        }
+        else if (interaction.deferred) {
+            await interaction.deleteReply();
+        }
     }
 }
 exports.CommandRunner = CommandRunner;
