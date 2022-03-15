@@ -1,9 +1,7 @@
 import Discord from 'discord.js'
-import Crypto from 'crypto'
 import { Module, ModuleManager } from './module'
 import { BaseArrayManager, BaseClass } from './base'
 import { ScopedLogger } from './logger'
-import { Client } from './client'
 
 export interface Command {
   data: Discord.ChatInputApplicationCommandData
@@ -269,6 +267,7 @@ export const getCommandOptionFootprint = (data: Discord.ApplicationCommandOption
   footprint += data.name
   footprint += data.description
   footprint += data.type
+  footprint += ((<any> data).required || false)
 
   return footprint
 }
