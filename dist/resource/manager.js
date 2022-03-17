@@ -81,6 +81,9 @@ class BaseConfigManager extends BaseManager {
     newContext(context) {
         return new BaseConfigManager(this.client, this.type, this.id, [...this.context, ...context]);
     }
+    setContext(context) {
+        Object.assign(this, { context: [...this.context, ...context] });
+    }
     getKey(name) {
         return path_1.default.join(...this.context, name);
     }

@@ -27,6 +27,7 @@ export declare class BaseConfigManager<T extends 'guild' | 'user'> extends BaseM
     get userConfigTable(): import("../database/query-builder").TableQueryBuilder;
     get configTable(): import("../database/query-builder").TableQueryBuilder;
     newContext(context: Array<string>): BaseConfigManager<T>;
+    setContext(context: Array<string>): void;
     getKey(name: string): string;
     get(name: string, defaultValue?: any): Promise<any>;
     set(name: string, value: any): Promise<void>;
@@ -38,12 +39,12 @@ export declare class DataManager extends BaseManager {
 }
 export declare class GuildConfigManager extends BaseConfigManager<'guild'> {
     constructor(guild: Guild, context: Array<string>);
-    newContext(context: string[]): BaseConfigManager<'guild'>;
+    newContext(context: string[]): GuildConfigManager;
     readonly guild: Guild;
 }
 export declare class UserConfigManager extends BaseConfigManager<'user'> {
     constructor(user: User, context: Array<string>);
-    newContext(context: string[]): BaseConfigManager<'user'>;
+    newContext(context: string[]): UserConfigManager;
     readonly user: User;
 }
 export declare class GuildMemberConfigManager extends BaseConfigManager<'guild'> {

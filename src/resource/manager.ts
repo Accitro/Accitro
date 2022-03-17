@@ -101,6 +101,10 @@ export class BaseConfigManager<T extends 'guild' | 'user'> extends BaseManager {
     return new BaseConfigManager(this.client, this.type, this.id, [...this.context, ...context])
   }
 
+  public setContext (context: Array<string>) {
+    Object.assign(this, { context: [...this.context, ...context] })
+  }
+
   public getKey (name: string) {
     return Path.join(...this.context, name)
   }
@@ -160,7 +164,7 @@ export class GuildConfigManager extends BaseConfigManager<'guild'> {
     this.guild = guild
   }
 
-  public newContext (context: string[]): BaseConfigManager<'guild'> {
+  public newContext (context: string[]): GuildConfigManager {
     return new GuildConfigManager(this.guild, [...this.context, ...context])
   }
 
@@ -174,7 +178,7 @@ export class UserConfigManager extends BaseConfigManager<'user'> {
     this.user = user
   }
 
-  public newContext (context: string[]): BaseConfigManager<'user'> {
+  public newContext (context: string[]): UserConfigManager {
     return new UserConfigManager(this.user, [...this.context, ...context])
   }
 
