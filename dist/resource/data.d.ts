@@ -13,7 +13,12 @@ export declare class User extends BaseClass {
     readonly config: UserConfigManager;
 }
 export declare class GuildMember extends BaseClass {
-    constructor(client: Client, discordGuildMember: Discord.GuildMember);
+    constructor(client: Client, discordGuildMember: Discord.GuildMember, reuse?: {
+        user?: User;
+        guild?: Guild;
+    });
     readonly discordGuildMember: Discord.GuildMember;
     readonly config: GuildMemberConfigManager;
+    readonly user: User;
+    readonly guild: Guild;
 }

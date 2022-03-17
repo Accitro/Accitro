@@ -24,12 +24,16 @@ class User extends base_1.BaseClass {
 }
 exports.User = User;
 class GuildMember extends base_1.BaseClass {
-    constructor(client, discordGuildMember) {
+    constructor(client, discordGuildMember, reuse) {
         super(client);
         this.discordGuildMember = discordGuildMember;
         this.config = new manager_1.GuildMemberConfigManager(this, []);
+        this.user = reuse?.user || new User(client, discordGuildMember.user);
+        this.guild = reuse?.guild || new Guild(client, discordGuildMember.guild);
     }
     discordGuildMember;
     config;
+    user;
+    guild;
 }
 exports.GuildMember = GuildMember;

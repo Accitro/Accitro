@@ -29,13 +29,17 @@ export class User extends BaseClass {
 }
 
 export class GuildMember extends BaseClass {
-  public constructor (client: Client, discordGuildMember: Discord.GuildMember) {
+  public constructor (client: Client, discordGuildMember: Discord.GuildMember, reuse?: { user?: User, guild?: Guild }) {
     super(client)
 
     this.discordGuildMember = discordGuildMember
     this.config = new GuildMemberConfigManager(this, [])
+    this.user = reuse?.user || new User(client, discordGuildMember.user)
+    this.guild = reuse?.guild || new Guild(client, discordGuildMember.guild)
   }
 
   public readonly discordGuildMember: Discord.GuildMember
   public readonly config: GuildMemberConfigManager
+  public readonly user: User
+  public readonly guild: Guild
 }
