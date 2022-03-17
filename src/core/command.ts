@@ -268,6 +268,8 @@ export const getCommandOptionFootprint = (data: Discord.ApplicationCommandOption
   footprint += data.name
   footprint += data.description
   footprint += data.type
+  footprint += (<any> data).required || false
+  footprint += (<Array<any>> (<any> data).choices || []).map(({ name, value }) => `${name}=${value}`).join()
 
   return footprint
 }
@@ -580,7 +582,12 @@ export class CommandRunner extends BaseClass {
     const result = await (async () => {
       try {
         return await run()
-      } catch (error: any) {
+      } catch (originalError: any) {
+        let error = originalError
+        if (error.name.startsWith('Error')) {
+          error = new CommandError(error, 'Internal')
+        }
+
         this.logger.error(error)
         return {
           ephemeral: true,
@@ -598,6 +605,11 @@ export class CommandRunner extends BaseClass {
         }
       }
     })()
-    result && await respond(<any> result).catch((error) => this.logger.error(error))
+
+    if (result) {
+      await respond(<any> result).catch((error) => this.logger.error(error))
+    } else if (interaction.deferred) {
+      await interaction.deleteReply()
+    }
   }
 }

@@ -226,6 +226,8 @@ const getCommandOptionFootprint = (data, footprint = '') => {
     footprint += data.name;
     footprint += data.description;
     footprint += data.type;
+    footprint += data.required || false;
+    footprint += (data.choices || []).map(({ name, value }) => `${name}=${value}`).join();
     return footprint;
 };
 exports.getCommandOptionFootprint = getCommandOptionFootprint;
@@ -505,7 +507,11 @@ class CommandRunner extends base_1.BaseClass {
             try {
                 return await run();
             }
-            catch (error) {
+            catch (originalError) {
+                let error = originalError;
+                if (error.name.startsWith('Error')) {
+                    error = new CommandError(error, 'Internal');
+                }
                 this.logger.error(error);
                 return {
                     ephemeral: true,
@@ -523,7 +529,12 @@ class CommandRunner extends base_1.BaseClass {
                 };
             }
         })();
-        result && await respond(result).catch((error) => this.logger.error(error));
+        if (result) {
+            await respond(result).catch((error) => this.logger.error(error));
+        }
+        else if (interaction.deferred) {
+            await interaction.deleteReply();
+        }
     }
 }
 exports.CommandRunner = CommandRunner;
