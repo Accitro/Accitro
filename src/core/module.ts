@@ -1,8 +1,6 @@
-import Discord from 'discord.js'
-
 import { BaseArrayManager, BaseClass } from './base'
 import { Client } from './client'
-import { Command, CommandDirectAccess, CommandGuildAccess, CommandManager, CommandRunner, getCommandFootprint } from './command'
+import { CommandManager, CommandRunner } from './command'
 import { ClientEvents, EventEmitter } from './events'
 import { ScopedLogger } from './logger'
 

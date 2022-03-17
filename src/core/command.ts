@@ -1,9 +1,8 @@
 import Discord from 'discord.js'
-import Crypto from 'crypto'
+
 import { Module, ModuleManager } from './module'
 import { BaseArrayManager, BaseClass } from './base'
 import { ScopedLogger } from './logger'
-import { Client } from './client'
 
 export interface Command {
   data: Discord.ChatInputApplicationCommandData
