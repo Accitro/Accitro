@@ -14,6 +14,17 @@ export class Guild extends BaseClass {
 
   public readonly discordGuild: Discord.Guild
   public readonly config: GuildConfigManager
+
+  public getGuildMember (user: User) {
+    const { discordGuild, discordGuild: { members: { cache: discordGuildMembers } }, client } = this
+    const { discordUser } = user
+    const discordGuildMember = discordGuildMembers.get(discordUser.id)
+    if (!discordGuildMember) {
+      throw new Error(`User ${discordUser.id} is not in guild ${discordGuild.id}`)
+    }
+
+    return new GuildMember(client, discordGuildMember, { user, guild: this })
+  }
 }
 
 export class User extends BaseClass {
@@ -26,6 +37,17 @@ export class User extends BaseClass {
 
   public readonly discordUser: Discord.User
   public readonly config: UserConfigManager
+
+  public getGuildMember (guild: Guild) {
+    const { discordUser, client } = this
+    const { discordGuild, discordGuild: { members: { cache: discordGuildMembers } } } = guild
+    const discordGuildMember = discordGuildMembers.get(discordUser.id)
+    if (!discordGuildMember) {
+      throw new Error(`User ${discordUser.id} is not in guild ${discordGuild.id}`)
+    }
+
+    return new GuildMember(client, discordGuildMember, { user: this, guild })
+  }
 }
 
 export class GuildMember extends BaseClass {

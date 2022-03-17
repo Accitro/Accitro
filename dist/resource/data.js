@@ -11,6 +11,15 @@ class Guild extends base_1.BaseClass {
     }
     discordGuild;
     config;
+    getGuildMember(user) {
+        const { discordGuild, discordGuild: { members: { cache: discordGuildMembers } }, client } = this;
+        const { discordUser } = user;
+        const discordGuildMember = discordGuildMembers.get(discordUser.id);
+        if (!discordGuildMember) {
+            throw new Error(`User ${discordUser.id} is not in guild ${discordGuild.id}`);
+        }
+        return new GuildMember(client, discordGuildMember, { user, guild: this });
+    }
 }
 exports.Guild = Guild;
 class User extends base_1.BaseClass {
@@ -21,6 +30,15 @@ class User extends base_1.BaseClass {
     }
     discordUser;
     config;
+    getGuildMember(guild) {
+        const { discordUser, client } = this;
+        const { discordGuild, discordGuild: { members: { cache: discordGuildMembers } } } = guild;
+        const discordGuildMember = discordGuildMembers.get(discordUser.id);
+        if (!discordGuildMember) {
+            throw new Error(`User ${discordUser.id} is not in guild ${discordGuild.id}`);
+        }
+        return new GuildMember(client, discordGuildMember, { user: this, guild });
+    }
 }
 exports.User = User;
 class GuildMember extends base_1.BaseClass {

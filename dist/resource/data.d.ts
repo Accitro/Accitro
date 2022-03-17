@@ -6,11 +6,13 @@ export declare class Guild extends BaseClass {
     constructor(client: Client, discordGuild: Discord.Guild);
     readonly discordGuild: Discord.Guild;
     readonly config: GuildConfigManager;
+    getGuildMember(user: User): GuildMember;
 }
 export declare class User extends BaseClass {
     constructor(client: Client, discordUser: Discord.User);
     readonly discordUser: Discord.User;
     readonly config: UserConfigManager;
+    getGuildMember(guild: Guild): GuildMember;
 }
 export declare class GuildMember extends BaseClass {
     constructor(client: Client, discordGuildMember: Discord.GuildMember, reuse?: {
