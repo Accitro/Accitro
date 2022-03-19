@@ -1,5 +1,6 @@
 import Discord from 'discord.js';
-import { GlobalConfigManager } from '../Accitro';
+import { GlobalConfigManager } from '../resource/manager';
+import { Guild, GuildMember, User } from '../resource/data';
 import { DatabaseCredentials, QueryBuilder } from '../database/query-builder';
 import { EventEmitter } from './events';
 import { ScopedLogger } from './logger';
@@ -20,4 +21,7 @@ export declare class Client {
     readonly config: GlobalConfigManager;
     private _application?;
     getApplication(): Promise<Discord.ClientApplication | null>;
+    getGuild(guildResolvable: Discord.Guild | string): Guild;
+    getUser(userResolvable: Discord.User | string): User;
+    getGuildMember(guildMemberResolvable: Discord.GuildMember | [string, string]): GuildMember;
 }

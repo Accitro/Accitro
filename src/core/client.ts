@@ -1,6 +1,7 @@
 import Discord from 'discord.js'
 
-import { GlobalConfigManager } from '../Accitro'
+import { GlobalConfigManager } from '../resource/manager'
+import { Guild, GuildMember, User } from '../resource/data'
 import { DatabaseCredentials, QueryBuilder } from '../database/query-builder'
 import { EventEmitter } from './events'
 import { Logger, ScopedLogger } from './logger'
@@ -42,5 +43,58 @@ export class Client {
     }
 
     return this._application
+  }
+
+  public getGuild (guildResolvable: Discord.Guild | string) {
+    const { discordClient: { guilds: { cache: discordGuilds } } } = this
+
+    const discordGuild = (() => {
+      if (typeof (guildResolvable) !== 'string') {
+        return guildResolvable
+      }
+
+      return discordGuilds.get(guildResolvable)
+    })()
+
+    if (!discordGuild) {
+      throw new Error(`Could not find guild #${guildResolvable}`)
+    }
+
+    return new Guild(this, discordGuild)
+  }
+
+  public getUser (userResolvable: Discord.User | string) {
+    const { discordClient: { users: { cache: discordUsers } } } = this
+    const discordUser = (() => {
+      if (typeof (userResolvable) !== 'string') {
+        return userResolvable
+      }
+
+      return discordUsers.get(userResolvable)
+    })()
+
+    if (!discordUser) {
+      throw new Error(`Could not find user #${userResolvable}`)
+    }
+
+    return new User(this, discordUser)
+  }
+
+  public getGuildMember (guildMemberResolvable: Discord.GuildMember | [string, string]) {
+    const { discordClient: { guilds: { cache: discordGuilds } } } = this
+    const discordGuildMember = (() => {
+      if (!Array.isArray(guildMemberResolvable)) {
+        return guildMemberResolvable
+      }
+
+      return discordGuilds.get(guildMemberResolvable[0])
+        ?.members.cache.get(guildMemberResolvable[1])
+    })()
+
+    if (!discordGuildMember) {
+      throw new Error(`Could not find guild member #${guildMemberResolvable}`)
+    }
+
+    return new GuildMember(this, discordGuildMember)
   }
 }
