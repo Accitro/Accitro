@@ -37,9 +37,10 @@ export class TableQueryBuilder {
 }
 
 export class QueryBuilder {
-  public constructor (client: Client, credentials: DatabaseCredentials) {
+  public constructor (client: Client, credentials: DatabaseCredentials, options?: Knex.Config) {
     this.client = client
     this.knex = knex({
+      ...options,
       connection: {
         host: credentials.host,
         database: credentials.name,

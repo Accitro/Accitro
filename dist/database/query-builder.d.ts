@@ -20,7 +20,7 @@ export declare class TableQueryBuilder {
     readonly has: (where: DatabaseRow) => ReturnType<QueryBuilder['has']>;
 }
 export declare class QueryBuilder {
-    constructor(client: Client, credentials: DatabaseCredentials);
+    constructor(client: Client, credentials: DatabaseCredentials, options?: Knex.Config);
     readonly client: Client;
     readonly knex: Knex;
     get schema(): Knex.SchemaBuilder;

@@ -5,7 +5,9 @@ import { DatabaseCredentials, QueryBuilder } from '../database/query-builder';
 import { EventEmitter } from './events';
 import { ScopedLogger } from './logger';
 import { ModuleManager } from './module';
+import { Knex } from 'knex';
 export interface ClientOptions {
+    knex?: Knex.Config;
 }
 export declare class Client {
     static defaultOptions: ClientOptions;

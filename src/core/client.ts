@@ -6,8 +6,10 @@ import { DatabaseCredentials, QueryBuilder } from '../database/query-builder'
 import { EventEmitter } from './events'
 import { Logger, ScopedLogger } from './logger'
 import { ModuleManager } from './module'
+import { Knex } from 'knex'
 
 export interface ClientOptions {
+  knex?: Knex.Config
 }
 
 export class Client {
@@ -15,7 +17,7 @@ export class Client {
   }
 
   public constructor (client: Discord.Client, databaseCredentials: DatabaseCredentials, options?: Partial<ClientOptions>) {
-    this.options = Object.assign(Client.defaultOptions, options)
+    this.options = { ...Client.defaultOptions, ...options }
     this.discordClient = client
     this.events = new EventEmitter(this)
     this.on = this.events.on.bind(this.events)

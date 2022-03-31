@@ -24,9 +24,10 @@ class TableQueryBuilder {
 }
 exports.TableQueryBuilder = TableQueryBuilder;
 class QueryBuilder {
-    constructor(client, credentials) {
+    constructor(client, credentials, options) {
         this.client = client;
         this.knex = (0, knex_1.default)({
+            ...options,
             connection: {
                 host: credentials.host,
                 database: credentials.name,
